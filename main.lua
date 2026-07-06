@@ -2436,26 +2436,21 @@ local aa = {
             local shineColor = Color3.fromHSV(hue, math.clamp(sat, 0.5, 1), 1)
             shineColor = shineColor:Lerp(Color3.fromRGB(255, 255, 255), 0.3)
             
-            -- 🟢 สีแสงแบบตัดเส้นคมๆ (ไม่มีการไล่สีจาง)
+            -- 🟢 ปรับช่วงแสงให้ยาวขึ้น (จาก 0.2 เป็น 0.6)
             local newColorSeq = ColorSequence.new({
                 ColorSequenceKeypoint.new(0, borderColor),
-                ColorSequenceKeypoint.new(0.4, borderColor),
-                ColorSequenceKeypoint.new(0.401, shineColor), -- สว่างแบบตัดฉับ
-                ColorSequenceKeypoint.new(0.599, shineColor), -- ลากความสว่างยาวๆ
-                ColorSequenceKeypoint.new(0.6, borderColor),  -- ตัดกลับไปมืดแบบฉับพลัน
+                ColorSequenceKeypoint.new(0.2, shineColor),   -- เริ่มสว่างตั้งแต่ 20%
+                ColorSequenceKeypoint.new(0.8, shineColor),   -- ลากยาวไปถึง 80%
                 ColorSequenceKeypoint.new(1, borderColor)
             })
             
-            local baseTransparency = 0.82
-            
-            -- 🟢 ความโปร่งใสแบบตัดขอบคมๆ (0 คือสว่างจ้า, baseTransparency คือส่วนที่มืด)
+            -- 🟢 ปรับความโปร่งใสให้สว่างตลอด (เปลี่ยนจาก 0.82 เป็น 0.3 เพื่อไม่ให้มืดจนเกินไป)
+            local dimTransparency = 0.3 
             local newTransSeq = NumberSequence.new({
-                NumberSequenceKeypoint.new(0, baseTransparency),
-                NumberSequenceKeypoint.new(0.4, baseTransparency),
-                NumberSequenceKeypoint.new(0.401, 0), -- สว่าง 100% ทันที
-                NumberSequenceKeypoint.new(0.599, 0), -- สว่าง 100% ลากยาว
-                NumberSequenceKeypoint.new(0.6, baseTransparency), -- ตัดกลับไปโปร่งใสทันที
-                NumberSequenceKeypoint.new(1, baseTransparency)
+                NumberSequenceKeypoint.new(0, dimTransparency),
+                NumberSequenceKeypoint.new(0.2, 0), -- จุดสว่างสุด (ลูกไฟ)
+                NumberSequenceKeypoint.new(0.8, 0),
+                NumberSequenceKeypoint.new(1, dimTransparency)
             })
 
             if k.GradientBorders then
