@@ -1515,8 +1515,8 @@ local aa = {
                     MidImage = "rbxassetid://6889812721",
                     TopImage = "rbxassetid://6276641225",
                     ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255),
-                    ScrollBarImageTransparency = 0.15, -- 🟢 ปรับความจางให้เหลือแค่ 15% (เห็นชัดแน่นอน)
-                    ScrollBarThickness = 3,
+                    ScrollBarImageTransparency = 0.15, -- 🟢 ปรับโปร่งใสเหลือ 15% (เห็นชัดแต่นุ่มนวล)
+                    ScrollBarThickness = 3, -- 🟢 หนา 3px เท่าเดิม
                     BorderSizePixel = 0,
                     CanvasSize = UDim2.fromScale(0, 0),
                     ScrollingDirection = Enum.ScrollingDirection.Y
@@ -1534,20 +1534,10 @@ local aa = {
                     )
                 }
             )
-            table.insert(j.RGBScrollbars, x.ContainerFrame) -- 🟢 บันทึก Scrollbar ตัวนี้เข้าสู่ระบบ RGB
-                {
-                    y,
-                    k(
-                        "UIPadding",
-                        {
-                            PaddingRight = UDim.new(0, 10),
-                            PaddingLeft = UDim.new(0, 1),
-                            PaddingTop = UDim.new(0, 1),
-                            PaddingBottom = UDim.new(0, 1)
-                        }
-                    )
-                }
-            )
+            
+            -- 🟢 บันทึก Scrollbar หลักเข้าสู่ระบบ RGB
+            table.insert(j.RGBScrollbars, x.ContainerFrame)
+            
             j.AddSignal(
                 y:GetPropertyChangedSignal "AbsoluteContentSize",
                 function()
@@ -2354,8 +2344,8 @@ local aa = {
                 Registry = {},
                 Signals = {},
                 TransparencyMotors = {},
-                GradientBorders = {},
-                RGBScrollbars = {}, -- 🟢 เพิ่มตัวนี้สำหรับเก็บ Scrollbar เพื่อทำ RGB
+                GradientBorders = {}, -- 🟢 ของเดิม (เอฟเฟคขอบ)
+                RGBScrollbars = {},   -- 🟢 เพิ่มตัวนี้สำหรับแถบเลื่อน RGB
                 DefaultProperties = {
                     ScreenGui = {ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling},
                     Frame = {
@@ -2535,17 +2525,16 @@ local aa = {
             end
             return t, u
         end
-        -- 🟢 ระบบหมุนไฟวิ่งขอบ & สี RGB ของ Scrollbar แบบไม่แดกสเปค
+        -- 🟢 ระบบหมุนไฟวิ่งแบบไม่แดกสเปค + Scrollbar RGB
         local RunService = game:GetService("RunService")
         local globalRot = 0
-        local rgbHue = 0 -- ตัวเก็บค่าสี RGB
-        
+        local rgbHue = 0 -- ตัวแปรเก็บค่าคลื่นสี RGB
+
         RunService.RenderStepped:Connect(function(dt)
-            globalRot = (globalRot + dt * 150) % 360
-            rgbHue = (rgbHue + dt * 0.15) % 1 -- 🟢 ความเร็วของสี RGB (ปรับ 0.15 ได้ถ้าอยากให้เปลี่ยนสีเร็ว/ช้า)
-            
-            local currentRGB = Color3.fromHSV(rgbHue, 1, 1) -- สีสว่างทึบสุดๆ ไม่มีมืดผสม
-            
+            globalRot = (globalRot + dt * 150) % 360 -- ความเร็วไฟวิ่งขอบ
+            rgbHue = (rgbHue + dt * 0.15) % 1 -- ความเร็วสี RGB ของ Scrollbar (เปลี่ยนเลข 0.15 ได้)
+            local currentRGB = Color3.fromHSV(rgbHue, 1, 1) -- สร้างสี RGB ปัจจุบัน
+
             -- 1. อัปเดตไฟวิ่งรอบขอบปุ่ม
             for idx = #k.GradientBorders, 1, -1 do
                 local grad = k.GradientBorders[idx]
@@ -2556,13 +2545,15 @@ local aa = {
                 end
             end
             
-            -- 2. 🟢 อัปเดตสี Scrollbar ทั้งหมดให้เป็น RGB
-            for idx = #k.RGBScrollbars, 1, -1 do
-                local scrollbar = k.RGBScrollbars[idx]
-                if scrollbar and scrollbar.Parent then
-                    scrollbar.ScrollBarImageColor3 = currentRGB
-                else
-                    table.remove(k.RGBScrollbars, idx)
+            -- 2. อัปเดตแถบเลื่อน (Scrollbar) ให้เป็น RGB
+            if k.RGBScrollbars then
+                for idx = #k.RGBScrollbars, 1, -1 do
+                    local scrollbar = k.RGBScrollbars[idx]
+                    if scrollbar and scrollbar.Parent then
+                        scrollbar.ScrollBarImageColor3 = currentRGB
+                    else
+                        table.remove(k.RGBScrollbars, idx)
+                    end
                 end
             end
         end)
@@ -3180,7 +3171,7 @@ local aa = {
                         e(
                             "UIStroke",
                             {
-                                Transparency = isLocked and 0.9 or 0.5, -- 🛠️ ดักเส้นขอบให้จางลง (0.9) ด้วย
+                                Transparency = isLocked and 0.9 or 0.5,
                                 ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
                                 ThemeTag = {Color = "InElementBorder"}
                             }
@@ -3190,6 +3181,7 @@ local aa = {
                     }
                 ),
                 e("UIListLayout", {Padding = UDim.new(0, 3)})
+                
             local t =
                 e(
                 "ScrollingFrame",
@@ -3201,14 +3193,17 @@ local aa = {
                     MidImage = "rbxassetid://6889812721",
                     TopImage = "rbxassetid://6276641225",
                     ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255),
-                    ScrollBarImageTransparency = 0.15, -- 🟢 ปรับความจางให้เหลือแค่ 15%
-                    ScrollBarThickness = 4,
+                    ScrollBarImageTransparency = 0.15, -- 🟢 ปรับโปร่งใสเหลือ 15% (มองเห็นชัด)
+                    ScrollBarThickness = 4, -- 🟢 หนา 4px เท่าเดิม
                     BorderSizePixel = 0,
                     CanvasSize = UDim2.fromScale(0, 0)
                 },
                 {s}
             )
-            table.insert(c.RGBScrollbars, t) -- 🟢 บันทึก Scrollbar ของ Dropdown เข้าสู่ระบบ RGB
+            
+            -- 🟢 บันทึก Scrollbar ของ Dropdown เข้าสู่ระบบ RGB
+            table.insert(c.RGBScrollbars, t)
+
             local u =
                 e(
                 "Frame",
