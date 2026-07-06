@@ -1515,12 +1515,26 @@ local aa = {
                     MidImage = "rbxassetid://6889812721",
                     TopImage = "rbxassetid://6276641225",
                     ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255),
-                    ScrollBarImageTransparency = 0.95,
+                    ScrollBarImageTransparency = 0.15, -- 🟢 ปรับความจางให้เหลือแค่ 15% (เห็นชัดแน่นอน)
                     ScrollBarThickness = 3,
                     BorderSizePixel = 0,
                     CanvasSize = UDim2.fromScale(0, 0),
                     ScrollingDirection = Enum.ScrollingDirection.Y
                 },
+                {
+                    y,
+                    k(
+                        "UIPadding",
+                        {
+                            PaddingRight = UDim.new(0, 10),
+                            PaddingLeft = UDim.new(0, 1),
+                            PaddingTop = UDim.new(0, 1),
+                            PaddingBottom = UDim.new(0, 1)
+                        }
+                    )
+                }
+            )
+            table.insert(j.RGBScrollbars, x.ContainerFrame) -- 🟢 บันทึก Scrollbar ตัวนี้เข้าสู่ระบบ RGB
                 {
                     y,
                     k(
@@ -2340,7 +2354,8 @@ local aa = {
                 Registry = {},
                 Signals = {},
                 TransparencyMotors = {},
-                GradientBorders = {}, -- 🟢 เพิ่มตัวนี้สำหรับเก็บเอฟเฟคขอบ
+                GradientBorders = {},
+                RGBScrollbars = {}, -- 🟢 เพิ่มตัวนี้สำหรับเก็บ Scrollbar เพื่อทำ RGB
                 DefaultProperties = {
                     ScreenGui = {ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling},
                     Frame = {
@@ -2520,17 +2535,34 @@ local aa = {
             end
             return t, u
         end
-        -- 🟢 ระบบหมุนไฟวิ่งแบบไม่แดกสเปค
+        -- 🟢 ระบบหมุนไฟวิ่งขอบ & สี RGB ของ Scrollbar แบบไม่แดกสเปค
         local RunService = game:GetService("RunService")
         local globalRot = 0
+        local rgbHue = 0 -- ตัวเก็บค่าสี RGB
+        
         RunService.RenderStepped:Connect(function(dt)
-            globalRot = (globalRot + dt * 150) % 360 -- ปรับเลข 150 ถ้าอยากให้วิ่งเร็วขึ้น/ช้าลง
+            globalRot = (globalRot + dt * 150) % 360
+            rgbHue = (rgbHue + dt * 0.15) % 1 -- 🟢 ความเร็วของสี RGB (ปรับ 0.15 ได้ถ้าอยากให้เปลี่ยนสีเร็ว/ช้า)
+            
+            local currentRGB = Color3.fromHSV(rgbHue, 1, 1) -- สีสว่างทึบสุดๆ ไม่มีมืดผสม
+            
+            -- 1. อัปเดตไฟวิ่งรอบขอบปุ่ม
             for idx = #k.GradientBorders, 1, -1 do
                 local grad = k.GradientBorders[idx]
                 if grad and grad.Parent then
                     grad.Rotation = globalRot
                 else
-                    table.remove(k.GradientBorders, idx) -- ลบทิ้งถ้า UI โดนลบไปแล้ว
+                    table.remove(k.GradientBorders, idx)
+                end
+            end
+            
+            -- 2. 🟢 อัปเดตสี Scrollbar ทั้งหมดให้เป็น RGB
+            for idx = #k.RGBScrollbars, 1, -1 do
+                local scrollbar = k.RGBScrollbars[idx]
+                if scrollbar and scrollbar.Parent then
+                    scrollbar.ScrollBarImageColor3 = currentRGB
+                else
+                    table.remove(k.RGBScrollbars, idx)
                 end
             end
         end)
@@ -3169,13 +3201,14 @@ local aa = {
                     MidImage = "rbxassetid://6889812721",
                     TopImage = "rbxassetid://6276641225",
                     ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255),
-                    ScrollBarImageTransparency = 0.95,
+                    ScrollBarImageTransparency = 0.15, -- 🟢 ปรับความจางให้เหลือแค่ 15%
                     ScrollBarThickness = 4,
                     BorderSizePixel = 0,
                     CanvasSize = UDim2.fromScale(0, 0)
                 },
                 {s}
             )
+            table.insert(c.RGBScrollbars, t) -- 🟢 บันทึก Scrollbar ของ Dropdown เข้าสู่ระบบ RGB
             local u =
                 e(
                 "Frame",
