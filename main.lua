@@ -193,7 +193,7 @@ local a, b = {
 
 local Animation
 pcall(function()
-    local _fn = loadstring(game:HttpGet("https://pastefy.app/NIWHeUvu/raw"))
+    local _fn = loadstring(game:HttpGet("https://raw.githubusercontent.com/Mfdvkgoorg/Test-New-F/main/animatedgui.lua")) -- animatedgui.lua
     if _fn then Animation = _fn() end
 end)
 if not Animation then Animation = {Apply = function() end} end
