@@ -2428,28 +2428,39 @@ local aa = {
                 p:setGoal(j.Instant.new(k.GetThemeProperty "ElementTransparency"))
             end
             
-            -- 🟢 อัปเดตสีไฟวิ่งรอบกรอบให้ตรงกับ Theme ทันที
             local accentColor = k.GetThemeProperty("Accent")
+            local borderColor = k.GetThemeProperty("ElementBorder")
             
-            -- 👉 จุดที่ 1: สีสโตกดำ (ขอบมืด)
-            -- ถ้ามันดำ/ชัดเกินไป เปลี่ยน k.GetThemeProperty("ElementBorder") เป็นสีที่ชอบ
-            -- เช่น เปลี่ยนเป็น Color3.fromRGB(50, 50, 50) หรือปล่อยค่าเดิมไว้ถ้าจะแก้ทีหลัง
-            local borderColor = k.GetThemeProperty("ElementBorder") 
-
-            -- 👉 จุดที่ 2: ทำให้แสงสว่างเด้งขึ้นเสมอ (ผสมสีขาวเข้าไป 20% ให้มันหลุดจากการโดนกลืน)
-            local shineColor = accentColor:Lerp(Color3.fromRGB(255, 255, 255), 0.2) 
-
-            -- 👉 จุดที่ 3: ขยายความกว้างของแสงให้หางยาวขึ้น เห็นชัดทุกธีม
+            local h, s, v = Color3.toHSV(accentColor)
+            local shineColor = Color3.fromHSV(h, math.clamp(s, 0.5, 1), 1)
+            shineColor = shineColor:Lerp(Color3.fromRGB(255, 255, 255), 0.3)
+            
             local newColorSeq = ColorSequence.new({
                 ColorSequenceKeypoint.new(0, borderColor),
-                ColorSequenceKeypoint.new(0.25, borderColor), -- ถอยระยะให้หางแสงยาวขึ้น
-                ColorSequenceKeypoint.new(0.5, shineColor),   -- จุดที่สว่างที่สุด
-                ColorSequenceKeypoint.new(0.75, borderColor), -- ถอยระยะให้หางแสงยาวขึ้น
+                ColorSequenceKeypoint.new(0.3, borderColor),
+                ColorSequenceKeypoint.new(0.5, shineColor),
+                ColorSequenceKeypoint.new(0.7, borderColor),
                 ColorSequenceKeypoint.new(1, borderColor)
             })
-            for _, grad in ipairs(k.GradientBorders) do
-                if grad and grad.Parent then
-                    grad.Color = newColorSeq
+            
+            local baseTransparency = 0.85
+            local newTransSeq = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, baseTransparency),
+                NumberSequenceKeypoint.new(0.4, baseTransparency),
+                NumberSequenceKeypoint.new(0.5, 0),
+                NumberSequenceKeypoint.new(0.6, baseTransparency),
+                NumberSequenceKeypoint.new(1, baseTransparency)
+            })
+
+            if k.GradientBorders then
+                for idx = #k.GradientBorders, 1, -1 do
+                    local grad = k.GradientBorders[idx]
+                    if grad and grad.Parent then
+                        grad.Color = newColorSeq
+                        grad.Transparency = newTransSeq
+                    else
+                        table.remove(k.GradientBorders, idx)
+                    end
                 end
             end
 
