@@ -2369,7 +2369,7 @@ local aa = {
             local thm = i[e(h).Theme]
             local x = getgenv().Fluent
             if x.Window and x.Window.AcrylicPaint then
-                if Animation and Animation.Apply then Animation.Apply(thm, x.Window.AcrylicPaint.Frame) end
+                if Animation and Animation.Apply then Animation.Apply(thm, x.GUI) end
                 getgenv().ButtonGradients = thm.ButtonGradient
             end
         end
