@@ -2428,19 +2428,40 @@ local aa = {
                 p:setGoal(j.Instant.new(k.GetThemeProperty "ElementTransparency"))
             end
             
-            -- 🟢 อัปเดตสีไฟวิ่งรอบกรอบให้ตรงกับ Theme ทันที
             local accentColor = k.GetThemeProperty("Accent")
             local borderColor = k.GetThemeProperty("ElementBorder")
+            
+            -- 🟢 เปลี่ยนชื่อตัวแปรเป็น hue, sat, val เพื่อไม่ให้ไปทับกับ h ของระบบ
+            local hue, sat, val = Color3.toHSV(accentColor)
+            local shineColor = Color3.fromHSV(hue, math.clamp(sat, 0.5, 1), 1)
+            shineColor = shineColor:Lerp(Color3.fromRGB(255, 255, 255), 0.3)
+            
             local newColorSeq = ColorSequence.new({
                 ColorSequenceKeypoint.new(0, borderColor),
-                ColorSequenceKeypoint.new(0.4, borderColor),
-                ColorSequenceKeypoint.new(0.5, accentColor), -- จุดสว่างที่สุด
-                ColorSequenceKeypoint.new(0.6, borderColor),
+                ColorSequenceKeypoint.new(0.3, borderColor),
+                ColorSequenceKeypoint.new(0.5, shineColor),
+                ColorSequenceKeypoint.new(0.7, borderColor),
                 ColorSequenceKeypoint.new(1, borderColor)
             })
-            for _, grad in ipairs(k.GradientBorders) do
-                if grad and grad.Parent then
-                    grad.Color = newColorSeq
+            
+            local baseTransparency = 0.85
+            local newTransSeq = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, baseTransparency),
+                NumberSequenceKeypoint.new(0.4, baseTransparency),
+                NumberSequenceKeypoint.new(0.5, 0),
+                NumberSequenceKeypoint.new(0.6, baseTransparency),
+                NumberSequenceKeypoint.new(1, baseTransparency)
+            })
+
+            if k.GradientBorders then
+                for idx = #k.GradientBorders, 1, -1 do
+                    local grad = k.GradientBorders[idx]
+                    if grad and grad.Parent then
+                        grad.Color = newColorSeq
+                        grad.Transparency = newTransSeq
+                    else
+                        table.remove(k.GradientBorders, idx)
+                    end
                 end
             end
 
