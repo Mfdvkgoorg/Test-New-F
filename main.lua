@@ -220,7 +220,7 @@ function Animation.Apply(theme, root)
     local ColorSequence = ShineConfig.ColorSequence
     
     for _, obj in ipairs(root:GetDescendants()) do
-        if obj:IsA("UIGradient") then
+        if obj:IsA("UIGradient") and obj.Name ~= "BorderShineGradient" then
             local t = 0
             local conn
             conn = RunService.RenderStepped:Connect(function(dt)
@@ -1033,7 +1033,7 @@ local aa = {
                 }
             )
             -- สร้างตัวไล่สีและบันทึกเข้าระบบ
-            local borderGrad = k("UIGradient", {Rotation = 0})
+            local borderGrad = k("UIGradient", {Rotation = 0, Name = "BorderShineGradient"})
             table.insert(j.GradientBorders, borderGrad)
 
             q.Border =
@@ -2441,10 +2441,10 @@ local aa = {
             -- 🟢 3. ปรับ Transparency: ให้พื้นที่อื่นจางๆ แต่จุดที่ไฟวิ่งให้โปร่งใส (0) 
             -- เพื่อให้เห็นสี Accent ของ UIStroke ที่อยู่ข้างหลังชัดๆ
             local newTransSeq = NumberSequence.new({
-                NumberSequenceKeypoint.new(0, 0.6), -- ปรับความจางของช่วงที่ไม่มีไฟวิ่ง (0.6 คือกำลังดี)
-                NumberSequenceKeypoint.new(0.2, 0), -- จุดเริ่มสว่าง
-                NumberSequenceKeypoint.new(0.8, 0), -- จุดจบสว่าง
-                NumberSequenceKeypoint.new(1, 0.6)
+                NumberSequenceKeypoint.new(0, 0.3), -- ปรับความจางของช่วงที่ไม่มีไฟวิ่ง (0.6 คือกำลังดี)
+                NumberSequenceKeypoint.new(0.09, 0), -- จุดเริ่มสว่าง
+                NumberSequenceKeypoint.new(0.91, 0), -- จุดจบสว่าง
+                NumberSequenceKeypoint.new(1, 0.3)
             })
 
             if k.GradientBorders then
