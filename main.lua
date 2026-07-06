@@ -228,13 +228,17 @@ function Animation.Apply(theme, root)
             local darkColor = theme.ElementBorder or Color3.fromRGB(30, 30, 30)
             local shineColor = theme.Accent or Color3.fromRGB(255, 255, 255)
             
-            grad.Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, darkColor),
-                ColorSequenceKeypoint.new(0.4, darkColor),
-                ColorSequenceKeypoint.new(0.5, shineColor),
-                ColorSequenceKeypoint.new(0.6, darkColor),
-                ColorSequenceKeypoint.new(1, darkColor)
-            })
+            getgenv().ButtonGradients = {
+                Background = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(7, 42, 82)),
+                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(12, 76, 142)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(21, 97, 181))
+                }),
+                Stroke = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 120, 200)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 40, 80))
+                })
+            }
             
             local conn
             conn = RunService.RenderStepped:Connect(function(dt)
