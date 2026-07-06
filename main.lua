@@ -2442,8 +2442,8 @@ local aa = {
             -- เพื่อให้เห็นสี Accent ของ UIStroke ที่อยู่ข้างหลังชัดๆ
             local newTransSeq = NumberSequence.new({
                 NumberSequenceKeypoint.new(0, 0.6), -- ปรับความจางของช่วงที่ไม่มีไฟวิ่ง (0.6 คือกำลังดี)
-                NumberSequenceKeypoint.new(0.2, 0), -- จุดเริ่มสว่าง
-                NumberSequenceKeypoint.new(0.8, 0), -- จุดจบสว่าง
+                NumberSequenceKeypoint.new(0.3, 0), -- จุดเริ่มสว่าง
+                NumberSequenceKeypoint.new(0.7, 0), -- จุดจบสว่าง
                 NumberSequenceKeypoint.new(1, 0.6)
             })
 
