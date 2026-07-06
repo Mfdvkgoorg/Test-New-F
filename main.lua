@@ -2436,20 +2436,25 @@ local aa = {
             local shineColor = Color3.fromHSV(hue, math.clamp(sat, 0.5, 1), 1)
             shineColor = shineColor:Lerp(Color3.fromRGB(255, 255, 255), 0.3)
             
+            -- 🟢 สีแสงแบบตัดเส้นคมๆ (ไม่มีการไล่สีจาง)
             local newColorSeq = ColorSequence.new({
                 ColorSequenceKeypoint.new(0, borderColor),
-                ColorSequenceKeypoint.new(0.3, borderColor),
-                ColorSequenceKeypoint.new(0.5, shineColor),
-                ColorSequenceKeypoint.new(0.7, borderColor),
+                ColorSequenceKeypoint.new(0.4, borderColor),
+                ColorSequenceKeypoint.new(0.401, shineColor), -- สว่างแบบตัดฉับ
+                ColorSequenceKeypoint.new(0.599, shineColor), -- ลากความสว่างยาวๆ
+                ColorSequenceKeypoint.new(0.6, borderColor),  -- ตัดกลับไปมืดแบบฉับพลัน
                 ColorSequenceKeypoint.new(1, borderColor)
             })
             
             local baseTransparency = 0.82
+            
+            -- 🟢 ความโปร่งใสแบบตัดขอบคมๆ (0 คือสว่างจ้า, baseTransparency คือส่วนที่มืด)
             local newTransSeq = NumberSequence.new({
                 NumberSequenceKeypoint.new(0, baseTransparency),
                 NumberSequenceKeypoint.new(0.4, baseTransparency),
-                NumberSequenceKeypoint.new(0.5, 0),
-                NumberSequenceKeypoint.new(0.6, baseTransparency),
+                NumberSequenceKeypoint.new(0.401, 0), -- สว่าง 100% ทันที
+                NumberSequenceKeypoint.new(0.599, 0), -- สว่าง 100% ลากยาว
+                NumberSequenceKeypoint.new(0.6, baseTransparency), -- ตัดกลับไปโปร่งใสทันที
                 NumberSequenceKeypoint.new(1, baseTransparency)
             })
 
