@@ -1032,15 +1032,20 @@ local aa = {
                     q.DescLabel
                 }
             )
+            -- สร้างตัวไล่สีและบันทึกเข้าระบบ
+            local borderGrad = k("UIGradient", {Rotation = 0})
+            table.insert(j.GradientBorders, borderGrad)
+
             q.Border =
                 k(
                 "UIStroke",
                 {
-                    Transparency = 0.5,
+                    Transparency = 0, -- เปิดสุดให้เห็นแสงชัดๆ
+                    Thickness = 1.5, -- ปรับความหนาเส้นตามความชอบ (ค่าเดิมคือ 1)
                     ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-                    Color = Color3.fromRGB(0, 0, 0),
-                    ThemeTag = {Color = "ElementBorder"}
-                }
+                    Color = Color3.fromRGB(255, 255, 255) -- พื้นขาวเพื่อให้ไล่สีทำงานได้
+                },
+                { borderGrad } -- ยัด Gradient เข้าไปใน Stroke
             )
             q.Frame =
                 k(
@@ -2335,6 +2340,7 @@ local aa = {
                 Registry = {},
                 Signals = {},
                 TransparencyMotors = {},
+                GradientBorders = {}, -- 🟢 เพิ่มตัวนี้สำหรับเก็บเอฟเฟคขอบ
                 DefaultProperties = {
                     ScreenGui = {ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling},
                     Frame = {
@@ -2421,6 +2427,23 @@ local aa = {
             for o, p in next, k.TransparencyMotors do
                 p:setGoal(j.Instant.new(k.GetThemeProperty "ElementTransparency"))
             end
+            
+            -- 🟢 อัปเดตสีไฟวิ่งรอบกรอบให้ตรงกับ Theme ทันที
+            local accentColor = k.GetThemeProperty("Accent")
+            local borderColor = k.GetThemeProperty("ElementBorder")
+            local newColorSeq = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, borderColor),
+                ColorSequenceKeypoint.new(0.4, borderColor),
+                ColorSequenceKeypoint.new(0.5, accentColor), -- จุดสว่างที่สุด
+                ColorSequenceKeypoint.new(0.6, borderColor),
+                ColorSequenceKeypoint.new(1, borderColor)
+            })
+            for _, grad in ipairs(k.GradientBorders) do
+                if grad and grad.Parent then
+                    grad.Color = newColorSeq
+                end
+            end
+
             local thm = i[e(h).Theme]
             local x = getgenv().Fluent
             if x.Window and x.Window.AcrylicPaint then
@@ -2480,6 +2503,21 @@ local aa = {
             end
             return t, u
         end
+        -- 🟢 ระบบหมุนไฟวิ่งแบบไม่แดกสเปค
+        local RunService = game:GetService("RunService")
+        local globalRot = 0
+        RunService.RenderStepped:Connect(function(dt)
+            globalRot = (globalRot + dt * 150) % 360 -- ปรับเลข 150 ถ้าอยากให้วิ่งเร็วขึ้น/ช้าลง
+            for idx = #k.GradientBorders, 1, -1 do
+                local grad = k.GradientBorders[idx]
+                if grad and grad.Parent then
+                    grad.Rotation = globalRot
+                else
+                    table.remove(k.GradientBorders, idx) -- ลบทิ้งถ้า UI โดนลบไปแล้ว
+                end
+            end
+        end)
+
         return k
     end,
     [19] = function()
