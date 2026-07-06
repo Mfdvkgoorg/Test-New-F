@@ -2444,7 +2444,7 @@ local aa = {
                 ColorSequenceKeypoint.new(1, borderColor)
             })
             
-            local baseTransparency = 0.25
+            local baseTransparency = 0.7
             local newTransSeq = NumberSequence.new({
                 NumberSequenceKeypoint.new(0, baseTransparency),
                 NumberSequenceKeypoint.new(0.4, baseTransparency),
