@@ -2429,28 +2429,22 @@ local aa = {
             end
             
             local accentColor = k.GetThemeProperty("Accent")
-            local borderColor = k.GetThemeProperty("ElementBorder")
             
-            -- 🟢 เปลี่ยนชื่อตัวแปรเป็น hue, sat, val เพื่อไม่ให้ไปทับกับ h ของระบบ
-            local hue, sat, val = Color3.toHSV(accentColor)
-            local shineColor = Color3.fromHSV(hue, math.clamp(sat, 0.5, 1), 1)
-            shineColor = shineColor:Lerp(Color3.fromRGB(255, 255, 255), 0.3)
-            
-            -- 🟢 ปรับช่วงแสงให้ยาวขึ้น (จาก 0.2 เป็น 0.6)
+            -- 🟢 1. เปลี่ยนให้ Stroke เป็นสี Accent ของธีมนั้นๆ ตลอดเวลา (สว่างตลอด)
+            -- 🟢 2. Gradient จะทำหน้าที่แค่เพิ่ม "ความสว่าง" ให้ส่วนที่แสงวิ่งผ่านเท่านั้น
             local newColorSeq = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, borderColor),
-                ColorSequenceKeypoint.new(0.2, shineColor),   -- เริ่มสว่างตั้งแต่ 20%
-                ColorSequenceKeypoint.new(0.8, shineColor),   -- ลากยาวไปถึง 80%
-                ColorSequenceKeypoint.new(1, borderColor)
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)), -- ขาวล้วน
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)), -- ขาวล้วน
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
             })
             
-            -- 🟢 ปรับความโปร่งใสให้สว่างตลอด (เปลี่ยนจาก 0.82 เป็น 0.3 เพื่อไม่ให้มืดจนเกินไป)
-            local dimTransparency = 0.3 
+            -- 🟢 3. ปรับ Transparency: ให้พื้นที่อื่นจางๆ แต่จุดที่ไฟวิ่งให้โปร่งใส (0) 
+            -- เพื่อให้เห็นสี Accent ของ UIStroke ที่อยู่ข้างหลังชัดๆ
             local newTransSeq = NumberSequence.new({
-                NumberSequenceKeypoint.new(0, dimTransparency),
-                NumberSequenceKeypoint.new(0.2, 0), -- จุดสว่างสุด (ลูกไฟ)
-                NumberSequenceKeypoint.new(0.8, 0),
-                NumberSequenceKeypoint.new(1, dimTransparency)
+                NumberSequenceKeypoint.new(0, 0.6), -- ปรับความจางของช่วงที่ไม่มีไฟวิ่ง (0.6 คือกำลังดี)
+                NumberSequenceKeypoint.new(0.2, 0), -- จุดเริ่มสว่าง
+                NumberSequenceKeypoint.new(0.8, 0), -- จุดจบสว่าง
+                NumberSequenceKeypoint.new(1, 0.6)
             })
 
             if k.GradientBorders then
@@ -2459,6 +2453,8 @@ local aa = {
                     if grad and grad.Parent then
                         grad.Color = newColorSeq
                         grad.Transparency = newTransSeq
+                        -- บังคับให้ Stroke เป็นสี Accent เสมอ
+                        grad.Parent.Color = accentColor
                     else
                         table.remove(k.GradientBorders, idx)
                     end
