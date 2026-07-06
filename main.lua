@@ -2431,8 +2431,9 @@ local aa = {
             local accentColor = k.GetThemeProperty("Accent")
             local borderColor = k.GetThemeProperty("ElementBorder")
             
-            local h, s, v = Color3.toHSV(accentColor)
-            local shineColor = Color3.fromHSV(h, math.clamp(s, 0.5, 1), 1)
+            -- 🟢 เปลี่ยนชื่อตัวแปรเป็น hue, sat, val เพื่อไม่ให้ไปทับกับ h ของระบบ
+            local hue, sat, val = Color3.toHSV(accentColor)
+            local shineColor = Color3.fromHSV(hue, math.clamp(sat, 0.5, 1), 1)
             shineColor = shineColor:Lerp(Color3.fromRGB(255, 255, 255), 0.3)
             
             local newColorSeq = ColorSequence.new({
