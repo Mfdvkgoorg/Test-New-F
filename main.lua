@@ -1041,7 +1041,7 @@ local aa = {
                 "UIStroke",
                 {
                     Transparency = 0, -- เปิดสุดให้เห็นแสงชัดๆ
-                    Thickness = 5, -- ปรับความหนาเส้นตามความชอบ (ค่าเดิมคือ 1)
+                    Thickness = 1.5, -- ปรับความหนาเส้นตามความชอบ (ค่าเดิมคือ 1)
                     ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
                     Color = Color3.fromRGB(255, 255, 255) -- พื้นขาวเพื่อให้ไล่สีทำงานได้
                 },
@@ -2430,12 +2430,21 @@ local aa = {
             
             -- 🟢 อัปเดตสีไฟวิ่งรอบกรอบให้ตรงกับ Theme ทันที
             local accentColor = k.GetThemeProperty("Accent")
-            local borderColor = k.GetThemeProperty("ElementBorder")
+            
+            -- 👉 จุดที่ 1: สีสโตกดำ (ขอบมืด)
+            -- ถ้ามันดำ/ชัดเกินไป เปลี่ยน k.GetThemeProperty("ElementBorder") เป็นสีที่ชอบ
+            -- เช่น เปลี่ยนเป็น Color3.fromRGB(50, 50, 50) หรือปล่อยค่าเดิมไว้ถ้าจะแก้ทีหลัง
+            local borderColor = k.GetThemeProperty("ElementBorder") 
+
+            -- 👉 จุดที่ 2: ทำให้แสงสว่างเด้งขึ้นเสมอ (ผสมสีขาวเข้าไป 20% ให้มันหลุดจากการโดนกลืน)
+            local shineColor = accentColor:Lerp(Color3.fromRGB(255, 255, 255), 0.2) 
+
+            -- 👉 จุดที่ 3: ขยายความกว้างของแสงให้หางยาวขึ้น เห็นชัดทุกธีม
             local newColorSeq = ColorSequence.new({
                 ColorSequenceKeypoint.new(0, borderColor),
-                ColorSequenceKeypoint.new(0.4, borderColor),
-                ColorSequenceKeypoint.new(0.5, accentColor), -- จุดสว่างที่สุด
-                ColorSequenceKeypoint.new(0.6, borderColor),
+                ColorSequenceKeypoint.new(0.25, borderColor), -- ถอยระยะให้หางแสงยาวขึ้น
+                ColorSequenceKeypoint.new(0.5, shineColor),   -- จุดที่สว่างที่สุด
+                ColorSequenceKeypoint.new(0.75, borderColor), -- ถอยระยะให้หางแสงยาวขึ้น
                 ColorSequenceKeypoint.new(1, borderColor)
             })
             for _, grad in ipairs(k.GradientBorders) do
