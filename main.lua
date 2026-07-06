@@ -7,6 +7,11 @@
     License: MIT
     GitHub: https://github.com/dawid-scripts/Fluent
 --]]
+
+--[[[
+    ไฟล์ animatedgui.lua ดึงจาก local _fn = loadstring(game:HttpGet
+]]
+
 local a, b = {
     {
         1,
@@ -191,12 +196,58 @@ local a, b = {
     }
 }
 
-local Animation
-pcall(function()
-    local _fn = loadstring(game:HttpGet("https://raw.githubusercontent.com/Mfdvkgoorg/Test-New-F/main/animatedgui.lua")) -- animatedgui.lua
-    if _fn then Animation = _fn() end
-end)
-if not Animation then Animation = {Apply = function() end} end
+local RunService = game:GetService("RunService")
+local Animation = {}
+local connections = {}
+
+local function ClearAllAnimations()
+    for _, c in ipairs(connections) do
+        pcall(function() c:Disconnect() end)
+    end
+    table.clear(connections)
+end
+
+function Animation.Apply(theme, root)
+    ClearAllAnimations()
+
+    if not theme or not root or not getgenv().ShineEnabled then
+        return
+    end
+
+    local Speed = 0.5
+
+    for _, obj in ipairs(root:GetDescendants()) do
+        if obj:IsA("UIStroke") then
+            local grad = obj:FindFirstChild("BorderEffect")
+            if not grad then
+                grad = Instance.new("UIGradient")
+                grad.Name = "BorderEffect"
+                grad.Parent = obj
+            end
+            
+            local darkColor = theme.ElementBorder or Color3.fromRGB(30, 30, 30)
+            local shineColor = theme.Accent or Color3.fromRGB(255, 255, 255)
+            
+            grad.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, darkColor),
+                ColorSequenceKeypoint.new(0.4, darkColor),
+                ColorSequenceKeypoint.new(0.5, shineColor),
+                ColorSequenceKeypoint.new(0.6, darkColor),
+                ColorSequenceKeypoint.new(1, darkColor)
+            })
+            
+            local conn
+            conn = RunService.RenderStepped:Connect(function(dt)
+                local rot = grad:GetAttribute("Rot") or 0
+                rot = (rot + (dt * (Speed * 300))) % 360
+                grad:SetAttribute("Rot", rot)
+                grad.Rotation = rot
+            end)
+            table.insert(connections, conn)
+        end
+    end
+end
+
 getgenv().ShineEnabled = true
 getgenv().ButtonGradients = {
     Background = ColorSequence.new {
