@@ -1041,7 +1041,7 @@ local aa = {
                 "UIStroke",
                 {
                     Transparency = 0, -- เปิดสุดให้เห็นแสงชัดๆ
-                    Thickness = 1.5, -- ปรับความหนาเส้นตามความชอบ (ค่าเดิมคือ 1)
+                    Thickness = 0.5, -- ปรับความหนาเส้นตามความชอบ (ค่าเดิมคือ 1)
                     ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
                     Color = Color3.fromRGB(255, 255, 255) -- พื้นขาวเพื่อให้ไล่สีทำงานได้
                 },
