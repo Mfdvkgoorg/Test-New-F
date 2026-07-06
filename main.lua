@@ -210,42 +210,42 @@ end
 function Animation.Apply(theme, root)
     ClearAllAnimations()
 
-    if not theme or not root or not getgenv().ShineEnabled then
+    if not theme or not root or not getgenv().ShineEnabled or not theme.ShineEnabled or not theme.Shine then
         return
     end
 
-    local Speed = 0.5
-
+    local ShineConfig = theme.Shine
+    local Speed = ShineConfig.Speed or 0.5
+    local RotationSpeed = ShineConfig.RotationSpeed or 25
+    local ColorSequence = ShineConfig.ColorSequence
+    
     for _, obj in ipairs(root:GetDescendants()) do
-        if obj:IsA("UIStroke") then
-            local grad = obj:FindFirstChild("BorderEffect")
-            if not grad then
-                grad = Instance.new("UIGradient")
-                grad.Name = "BorderEffect"
-                grad.Parent = obj
-            end
-            
-            local darkColor = theme.ElementBorder or Color3.fromRGB(30, 30, 30)
-            local shineColor = theme.Accent or Color3.fromRGB(255, 255, 255)
-            
-            getgenv().ButtonGradients = {
-                Background = ColorSequence.new({
-                    ColorSequenceKeypoint.new(0, Color3.fromRGB(7, 42, 82)),
-                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(12, 76, 142)),
-                    ColorSequenceKeypoint.new(1, Color3.fromRGB(21, 97, 181))
-                }),
-                Stroke = ColorSequence.new({
-                    ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 120, 200)),
-                    ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 40, 80))
-                })
-            }
-            
+        if obj:IsA("UIGradient") then
+            local t = 0
             local conn
             conn = RunService.RenderStepped:Connect(function(dt)
-                local rot = grad:GetAttribute("Rot") or 0
-                rot = (rot + (dt * (Speed * 300))) % 360
-                grad:SetAttribute("Rot", rot)
-                grad.Rotation = rot
+                local t = obj:GetAttribute("old_t") or 0
+                t += dt * Speed
+                obj:SetAttribute("old_t", t)
+                
+                obj.Rotation = (t * RotationSpeed) % 360
+                obj.Color = ColorSequence
+            end)
+            table.insert(connections, conn)
+        end
+
+        if obj:IsA("UIStroke") and theme.StrokeShine then
+            local from = theme.StrokeDark or theme.AcrylicBorder
+            local shine = theme.Accent
+            local t = 0
+            local conn
+            conn = RunService.RenderStepped:Connect(function(dt)
+                local t = obj:GetAttribute("old_t") or 0
+                t += dt * Speed
+                obj.Thickness = 2
+                obj:SetAttribute("old_t", t)
+            
+                obj.Color = from:Lerp(shine, (math.sin(t) + 1) / 2)
             end)
             table.insert(connections, conn)
         end
