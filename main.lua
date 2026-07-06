@@ -2441,10 +2441,10 @@ local aa = {
             -- 🟢 3. ปรับ Transparency: ให้พื้นที่อื่นจางๆ แต่จุดที่ไฟวิ่งให้โปร่งใส (0) 
             -- เพื่อให้เห็นสี Accent ของ UIStroke ที่อยู่ข้างหลังชัดๆ
             local newTransSeq = NumberSequence.new({
-                NumberSequenceKeypoint.new(0, 0.6), -- ปรับความจางของช่วงที่ไม่มีไฟวิ่ง (0.6 คือกำลังดี)
+                NumberSequenceKeypoint.new(0, 0.3), -- ปรับความจางของช่วงที่ไม่มีไฟวิ่ง (0.6 คือกำลังดี)
                 NumberSequenceKeypoint.new(0.3, 0), -- จุดเริ่มสว่าง
                 NumberSequenceKeypoint.new(0.6, 0), -- จุดจบสว่าง
-                NumberSequenceKeypoint.new(1, 0.6)
+                NumberSequenceKeypoint.new(1, 0.3)
             })
 
             if k.GradientBorders then
