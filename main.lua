@@ -1515,7 +1515,7 @@ local aa = {
                     MidImage = "rbxassetid://6889812721",
                     TopImage = "rbxassetid://6276641225",
                     ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255),
-                    ScrollBarImageTransparency = 0.15, -- 🟢 ปรับโปร่งใสเหลือ 15% (เห็นชัดแต่นุ่มนวล)
+                    ScrollBarImageTransparency = 0.60, -- 🟢 ปรับโปร่งใสเหลือ 15% (เห็นชัดแต่นุ่มนวล)
                     ScrollBarThickness = 3, -- 🟢 หนา 3px เท่าเดิม
                     BorderSizePixel = 0,
                     CanvasSize = UDim2.fromScale(0, 0),
@@ -2532,7 +2532,7 @@ local aa = {
 
         RunService.RenderStepped:Connect(function(dt)
             globalRot = (globalRot + dt * 150) % 360 -- ความเร็วไฟวิ่งขอบ
-            rgbHue = (rgbHue + dt * 0.15) % 1 -- ความเร็วสี RGB ของ Scrollbar (เปลี่ยนเลข 0.15 ได้)
+            rgbHue = (rgbHue + dt * 0.50) % 1 -- ความเร็วสี RGB ของ Scrollbar (เปลี่ยนเลข 0.15 ได้)
             local currentRGB = Color3.fromHSV(rgbHue, 1, 1) -- สร้างสี RGB ปัจจุบัน
 
             -- 1. อัปเดตไฟวิ่งรอบขอบปุ่ม
@@ -3193,7 +3193,7 @@ local aa = {
                     MidImage = "rbxassetid://6889812721",
                     TopImage = "rbxassetid://6276641225",
                     ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255),
-                    ScrollBarImageTransparency = 0.15, -- 🟢 ปรับโปร่งใสเหลือ 15% (มองเห็นชัด)
+                    ScrollBarImageTransparency = 0.60, -- 🟢 ปรับโปร่งใสเหลือ 15% (มองเห็นชัด)
                     ScrollBarThickness = 4, -- 🟢 หนา 4px เท่าเดิม
                     BorderSizePixel = 0,
                     CanvasSize = UDim2.fromScale(0, 0)
