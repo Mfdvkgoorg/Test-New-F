@@ -1475,17 +1475,12 @@ local aa = {
                 "TextButton",
                 {
                     Size = UDim2.new(1, 0, 0, 34),
-                    BackgroundTransparency = 0.92,
+                    BackgroundTransparency = 1,
                     Parent = s,
                     ThemeTag = {BackgroundColor3 = "Tab"}
                 },
                 {
                     k("UICorner", {CornerRadius = UDim.new(0, 6)}),
-                    k("UIStroke", {
-                        Transparency = 0.7,
-                        ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-                        ThemeTag = {Color = "ElementBorder"}
-                    }),
                     k(
                         "TextLabel",
                         {
@@ -1563,17 +1558,17 @@ local aa = {
                     x.ContainerFrame.CanvasSize = UDim2.new(0, 0, 0, y.AbsoluteContentSize.Y + 2)
                 end
             )
-            x.Motor, x.SetTransparency = j.SpringMotor(0.92, x.Frame, "BackgroundTransparency")
+            x.Motor, x.SetTransparency = j.SpringMotor(1, x.Frame, "BackgroundTransparency")
             j.AddSignal(
                 x.Frame.MouseEnter,
                 function()
-                    x.SetTransparency(x.Selected and 0.85 or 0.87)
+                    x.SetTransparency(x.Selected and 0.85 or 0.89)
                 end
             )
             j.AddSignal(
                 x.Frame.MouseLeave,
                 function()
-                    x.SetTransparency(x.Selected and 0.89 or 0.92)
+                    x.SetTransparency(x.Selected and 0.89 or 1)
                 end
             )
             j.AddSignal(
@@ -2345,7 +2340,7 @@ local aa = {
             local I, J = 0, 0
             v.SelectorPosMotor:onStep(
                 function(K)
-                    D.Position = UDim2.new(0, 0, 0, K + 17 + (v.TabHolderTop or 0))
+                    D.Position = UDim2.new(0, 0, 0, K + 17)
                     local L = tick()
                     local M = L - J
                     if I ~= nil then
