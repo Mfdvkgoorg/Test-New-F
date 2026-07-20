@@ -1475,7 +1475,7 @@ local aa = {
                 "TextButton",
                 {
                     Size = UDim2.new(1, 0, 0, 34),
-                    BackgroundTransparency = 0.92,
+                    BackgroundTransparency = 0.6, -- ทำให้สีพื้นหลัง tap main / setting มองเห็นชัดขึ้น
                     Parent = s,
                     ThemeTag = {BackgroundColor3 = "Tab"}
                 },
@@ -1562,7 +1562,7 @@ local aa = {
             j.AddSignal(
                 x.Frame.MouseEnter,
                 function()
-                    x.SetTransparency(x.Selected and 0.85 or 0.87)
+                    x.SetTransparency(x.Selected and 0.43 or 0.43)
                 end
             )
             j.AddSignal(
