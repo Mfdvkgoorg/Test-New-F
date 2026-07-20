@@ -1032,24 +1032,27 @@ local aa = {
                     q.DescLabel
                 }
             )
+            -- สร้างตัวไล่สีและบันทึกเข้าระบบ
+            local borderGrad = k("UIGradient", {Rotation = 0, Name = "BorderShineGradient"})
+            table.insert(j.GradientBorders, borderGrad)
+
             q.Border =
                 k(
                 "UIStroke",
                 {
-                    Transparency = 0.5,
+                    Transparency = 0, -- เปิดสุดให้เห็นแสงชัดๆ
+                    Thickness = 1.5, -- ปรับความหนาเส้นตามความชอบ (ค่าเดิมคือ 1)
                     ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-                    Color = Color3.fromRGB(0, 0, 0),
-                    ThemeTag = {
-                        Color = "ElementBorder"
-                    }
-                }
+                    Color = Color3.fromRGB(255, 255, 255) -- พื้นขาวเพื่อให้ไล่สีทำงานได้
+                },
+                { borderGrad } -- ยัด Gradient เข้าไปใน Stroke
             )
             q.Frame =
                 k(
                 "TextButton",
                 {
                     Size = UDim2.new(1, 0, 0, 0),
-                    BackgroundTransparency = opt.Locked and 0.94 or 0.89,
+                    BackgroundTransparency = opt.Locked and 0.94 or 0.89, -- ทำให้พื้นหลังมืดลงเมื่อโดนล็อค
                     BackgroundColor3 = Color3.fromRGB(130, 130, 130),
                     Parent = o,
                     AutomaticSize = Enum.AutomaticSize.Y,
@@ -1139,6 +1142,13 @@ local aa = {
             end
             q:SetTitle(m)
             q:SetDesc(n)
+            
+            local lib = e(h)
+            local currentWin = lib.Window or (lib.Windows and lib.Windows[#lib.Windows])
+            if currentWin and currentWin.RegisterElement then
+                currentWin.RegisterElement(q.Frame, m, "Element", n)
+            end
+
             if p then
                 local r, s, t =
                     h.Themes,
@@ -1421,6 +1431,13 @@ local aa = {
                     m.Root.Size = UDim2.new(1, 0, 0, m.Layout.AbsoluteContentSize.Y + 25)
                 end
             )
+            
+            local lib = e(h)
+            local currentWin = lib.Window or (lib.Windows and lib.Windows[#lib.Windows])
+            if currentWin and currentWin.RegisterElement then
+                currentWin.RegisterElement(m.Root, k, "Section")
+            end
+            
             return m
         end
     end,
@@ -1458,20 +1475,17 @@ local aa = {
                 "TextButton",
                 {
                     Size = UDim2.new(1, 0, 0, 34),
-                    BackgroundTransparency = 1,
+                    BackgroundTransparency = 0.92,
                     Parent = s,
                     ThemeTag = {BackgroundColor3 = "Tab"}
                 },
                 {
                     k("UICorner", {CornerRadius = UDim.new(0, 6)}),
-                    k(
-                        "UIStroke",
-                        {
-                            Transparency = 1,
-                            Thickness = 1,
-                            ThemeTag = {Color = "Accent"}
-                        }
-                    ),
+                    k("UIStroke", {
+                        Transparency = 0.7,
+                        ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+                        ThemeTag = {Color = "ElementBorder"}
+                    }),
                     k(
                         "TextLabel",
                         {
@@ -1549,17 +1563,17 @@ local aa = {
                     x.ContainerFrame.CanvasSize = UDim2.new(0, 0, 0, y.AbsoluteContentSize.Y + 2)
                 end
             )
-            x.Motor, x.SetTransparency = j.SpringMotor(1, x.Frame, "BackgroundTransparency")
+            x.Motor, x.SetTransparency = j.SpringMotor(0.92, x.Frame, "BackgroundTransparency")
             j.AddSignal(
                 x.Frame.MouseEnter,
                 function()
-                    x.SetTransparency(x.Selected and 0.85 or 0.89)
+                    x.SetTransparency(x.Selected and 0.85 or 0.87)
                 end
             )
             j.AddSignal(
                 x.Frame.MouseLeave,
                 function()
-                    x.SetTransparency(x.Selected and 0.89 or 1)
+                    x.SetTransparency(x.Selected and 0.89 or 0.92)
                 end
             )
             j.AddSignal(
@@ -1600,13 +1614,9 @@ local aa = {
             for s, t in next, o.Tabs do
                 t.SetTransparency(1)
                 t.Selected = false
-                local stroke = t.Frame:FindFirstChild("UIStroke")
-                if stroke then stroke.Transparency = 1 end
             end
             o.Tabs[q].SetTransparency(0.89)
             o.Tabs[q].Selected = true
-            local activeStroke = o.Tabs[q].Frame:FindFirstChild("UIStroke")
-            if activeStroke then activeStroke.Transparency = 0 end
             r.TabDisplay.Text = o.Tabs[q].Name
             r.SelectorPosMotor:setGoal(l(o:GetCurrentTabPos(), {frequency = 6}))
             task.spawn(
@@ -1967,11 +1977,219 @@ local aa = {
                     "Frame",
                     {Size = UDim2.fromOffset(20, 20), BackgroundTransparency = 1, Position = UDim2.new(1, -20, 1, -20)}
                 )
+            local SearchElements = {}
+            local AllElements = {}
+
+            local function normalizeText(text)
+                if not text then return "" end
+                text = tostring(text):lower():gsub("^%s+", ""):gsub("%s+$", ""):gsub("%s+", " ")
+                return text
+            end
+
+            local function checkMatch(text, query)
+                if query == "" then return true end
+                local normText = normalizeText(text)
+                if normText == "" then return false end
+                local words = {}
+                for word in string.gmatch(query, "%S+") do table.insert(words, word) end
+                if #words == 0 then return true end
+                for _, word in ipairs(words) do
+                    if not string.find(normText, word, 1, true) then return false end
+                end
+                return true
+            end
+
+            local function UpdateElementVisibility(searchTerm)
+                local query = normalizeText(searchTerm)
+                local matchedSectionFrames = {}
+                local elementsInMatchedSections = {}
+
+                for element, data in pairs(AllElements) do
+                    if element and element.Parent and data.type == "Section" then
+                        if query ~= "" and checkMatch(data.title, query) then
+                            matchedSectionFrames[element] = true
+                            local container = element:FindFirstChild("Container")
+                            if container then
+                                for _, child in pairs(container:GetChildren()) do
+                                    if not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
+                                        elementsInMatchedSections[child] = true
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+
+                for element, data in pairs(AllElements) do
+                    if element and element.Parent then
+                        if query == "" then
+                            element.Visible = true
+                        else
+                            local matchesTitle = checkMatch(data.title, query)
+                            local matchesDesc = checkMatch(data.description, query)
+                            local matchesSection = elementsInMatchedSections[element] == true
+
+                            if not matchesSection and data.section and matchedSectionFrames[data.section] then
+                                matchesSection = true
+                            end
+
+                            element.Visible = matchesTitle or matchesDesc or matchesSection
+                        end
+                    end
+                end
+
+                task.spawn(function()
+                    task.wait(0.05)
+                    if not v or not v.ContainerHolder then return end
+                    for _, tabContainer in pairs(v.ContainerHolder:GetChildren()) do
+                        if tabContainer:IsA("ScrollingFrame") or tabContainer:IsA("CanvasGroup") then
+                            local actualContainer = tabContainer:IsA("CanvasGroup") and tabContainer:FindFirstChildWhichIsA("ScrollingFrame") or tabContainer
+                            if actualContainer then
+                                local cLayout = actualContainer:FindFirstChild("UIListLayout")
+                                if cLayout then actualContainer.CanvasSize = UDim2.new(0, 0, 0, math.max(0, cLayout.AbsoluteContentSize.Y + 2)) end
+                                for _, section in pairs(actualContainer:GetChildren()) do
+                                    if section:IsA("Frame") and section.Name ~= "UIPadding" then
+                                        local sContainer = section:FindFirstChild("Container")
+                                        if sContainer and sContainer:IsA("Frame") then
+                                            local sLayout = sContainer:FindFirstChild("UIListLayout")
+                                            if sLayout then
+                                                local hasVis = false
+                                                for _, el in pairs(sContainer:GetChildren()) do
+                                                    if not el:IsA("UIListLayout") and el.Visible then hasVis = true break end
+                                                end
+                                                if query == "" or hasVis then
+                                                    section.Visible = true
+                                                    sContainer.Size = UDim2.new(1, 0, 0, math.max(0, sLayout.AbsoluteContentSize.Y))
+                                                else
+                                                    section.Visible = false
+                                                    sContainer.Size = UDim2.new(1, 0, 0, 0)
+                                                end
+                                            end
+                                            local rootLayout = section:FindFirstChild("UIListLayout")
+                                            if rootLayout then section.Size = UDim2.new(1, 0, 0, math.max(0, rootLayout.AbsoluteContentSize.Y + 25)) end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end)
+            end
+
+            local function RegisterElement(elementFrame, title, elementType, description)
+                if elementFrame then
+                    local sectionFrame = nil
+                    local parent = elementFrame.Parent
+                    while parent do
+                        if parent:FindFirstChild("Container") then
+                            local secContainer = parent:FindFirstChild("Container")
+                            if secContainer and elementFrame.Parent == secContainer then
+                                sectionFrame = parent
+                                break
+                            end
+                        end
+                        if parent:IsA("ScreenGui") then break end
+                        parent = parent.Parent
+                    end
+                    AllElements[elementFrame] = {
+                        title = tostring(title or ""),
+                        type = elementType or "Element",
+                        description = tostring(description or ""),
+                        section = sectionFrame
+                    }
+                end
+            end
+
+            v.ShowSearch = (t.Search == nil) and true or (t.Search and true or false)
+
+            local SearchFrame = s("Frame", {
+                Size = UDim2.new(1, 0, 0, 28),
+                Position = UDim2.new(0, 0, 0, 0),
+                BackgroundTransparency = 0.7,
+                ZIndex = 10,
+                Visible = v.ShowSearch,
+                BackgroundColor3 = Color3.fromRGB(20, 20, 20),
+                ThemeTag = { BackgroundColor3 = "Element" }
+            }, {
+                s("UICorner", { CornerRadius = UDim.new(0, 4) }),
+                s("UIStroke", { ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Transparency = 0.5, ThemeTag = { Color = "ElementBorder" } })
+            })
+
+            local SearchInput = s("TextBox", {
+                FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json"),
+                TextColor3 = Color3.fromRGB(200, 200, 200),
+                TextSize = 13,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                TextYAlignment = Enum.TextYAlignment.Center,
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, -36, 1, 0),
+                Position = UDim2.new(0, 8, 0, 0),
+                PlaceholderText = "Search...",
+                PlaceholderColor3 = Color3.fromRGB(120, 120, 120),
+                ClearTextOnFocus = false,
+                Text = "",
+                Parent = SearchFrame,
+                ThemeTag = { TextColor3 = "Text", PlaceholderColor3 = "SubText" }
+            })
+
+            local SearchIcon = s("ImageLabel", {
+                Size = UDim2.fromOffset(16, 16),
+                Position = UDim2.new(1, -13, 0.5, 0),
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                BackgroundTransparency = 1,
+                Image = "rbxassetid://10734943674",
+                Parent = SearchFrame,
+                ImageTransparency = 0.3,
+                ThemeTag = { ImageColor3 = "SubText" }
+            })
+            
+            -- 🟢 ทำระบบไฟวิ่งสี RGB รอบกรอบ Search ตามที่สั่งไว้
+            local searchStroke = SearchFrame:FindFirstChildWhichIsA("UIStroke")
+            local rgbSearchGlow = s("UIGradient", { Rotation = 0, Name = "BorderShineGradient" })
+            
+            m.AddSignal(SearchInput.Focused, function()
+                if searchStroke then
+                    searchStroke.Color = Color3.fromRGB(255, 255, 255)
+                    searchStroke.Transparency = 0
+                    rgbSearchGlow.Parent = searchStroke
+                    table.insert(m.GradientBorders, rgbSearchGlow)
+                end
+            end)
+            
+            m.AddSignal(SearchInput.FocusLost, function()
+                if searchStroke then
+                    rgbSearchGlow.Parent = nil
+                    m.OverrideTag(searchStroke, { Color = "ElementBorder" })
+                    searchStroke.Transparency = 0.5
+                end
+            end)
+
+            m.AddSignal(SearchInput:GetPropertyChangedSignal("Text"), function()
+                UpdateElementVisibility(SearchInput.Text)
+            end)
+
+            m.AddSignal(game:GetService("UserInputService").InputBegan, function(input, gp)
+                if gp then return end
+                if input.KeyCode == Enum.KeyCode.Escape and SearchInput:IsFocused() then
+                    SearchInput.Text = ""
+                    SearchInput:ReleaseFocus()
+                end
+            end)
+
+            v.SearchElements = SearchElements
+            v.AllElements = AllElements
+            v.RegisterElement = RegisterElement
+            v.UpdateElementVisibility = UpdateElementVisibility
+
+            local tabHolderTop = v.ShowSearch and 34 or 0
+            v.TabHolderTop = tabHolderTop
+
             v.TabHolder =
                 s(
                 "ScrollingFrame",
                 {
-                    Size = UDim2.fromScale(1, 1),
+                    Size = UDim2.new(1, 0, 1, -tabHolderTop),
+                    Position = UDim2.new(0, 0, 0, tabHolderTop),
                     BackgroundTransparency = 1,
                     ScrollBarImageTransparency = 1,
                     ScrollBarThickness = 0,
@@ -1990,7 +2208,7 @@ local aa = {
                     BackgroundTransparency = 1,
                     ClipsDescendants = true
                 },
-                {v.TabHolder, D}
+                {SearchFrame, v.TabHolder, D}
             )
             v.TabDisplay =
                 s(
@@ -2127,7 +2345,7 @@ local aa = {
             local I, J = 0, 0
             v.SelectorPosMotor:onStep(
                 function(K)
-                    D.Position = UDim2.new(0, 0, 0, K + 17)
+                    D.Position = UDim2.new(0, 0, 0, K + 17 + (v.TabHolderTop or 0))
                     local L = tick()
                     local M = L - J
                     if I ~= nil then
