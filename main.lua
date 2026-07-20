@@ -1431,6 +1431,13 @@ local aa = {
                     m.Root.Size = UDim2.new(1, 0, 0, m.Layout.AbsoluteContentSize.Y + 25)
                 end
             )
+            
+            local lib = e(h)
+            local currentWin = lib.Window or (lib.Windows and lib.Windows[#lib.Windows])
+            if currentWin and currentWin.RegisterElement then
+                currentWin.RegisterElement(m.Root, k, "Section")
+            end
+            
             return m
         end
     end,
@@ -1468,7 +1475,7 @@ local aa = {
                 "TextButton",
                 {
                     Size = UDim2.new(1, 0, 0, 34),
-                    BackgroundTransparency = 1,
+                    BackgroundTransparency = 0.92,
                     Parent = s,
                     ThemeTag = {BackgroundColor3 = "Tab"}
                 },
@@ -1551,17 +1558,17 @@ local aa = {
                     x.ContainerFrame.CanvasSize = UDim2.new(0, 0, 0, y.AbsoluteContentSize.Y + 2)
                 end
             )
-            x.Motor, x.SetTransparency = j.SpringMotor(1, x.Frame, "BackgroundTransparency")
+            x.Motor, x.SetTransparency = j.SpringMotor(0.92, x.Frame, "BackgroundTransparency")
             j.AddSignal(
                 x.Frame.MouseEnter,
                 function()
-                    x.SetTransparency(x.Selected and 0.85 or 0.89)
+                    x.SetTransparency(x.Selected and 0.85 or 0.87)
                 end
             )
             j.AddSignal(
                 x.Frame.MouseLeave,
                 function()
-                    x.SetTransparency(x.Selected and 0.89 or 1)
+                    x.SetTransparency(x.Selected and 0.89 or 0.92)
                 end
             )
             j.AddSignal(
@@ -1600,7 +1607,7 @@ local aa = {
             local r = o.Window
             o.SelectedTab = q
             for s, t in next, o.Tabs do
-                t.SetTransparency(1)
+                t.SetTransparency(0.92)
                 t.Selected = false
             end
             o.Tabs[q].SetTransparency(0.89)
