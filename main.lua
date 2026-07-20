@@ -1431,13 +1431,6 @@ local aa = {
                     m.Root.Size = UDim2.new(1, 0, 0, m.Layout.AbsoluteContentSize.Y + 25)
                 end
             )
-            
-            local lib = e(h)
-            local currentWin = lib.Window or (lib.Windows and lib.Windows[#lib.Windows])
-            if currentWin and currentWin.RegisterElement then
-                currentWin.RegisterElement(m.Root, k, "Section")
-            end
-            
             return m
         end
     end,
