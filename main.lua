@@ -3103,7 +3103,8 @@ local aa = {
         g.__index = g
         g.__type = "Dropdown"
         function g.New(h, i, j)
-            local isLocked = j.Locked -- 🛡️ ล็อคตัวแปร
+            local isLocked = j.Locked
+            j.Search = (j.Search == nil) and true or j.Search
             local k, l, m =
                 h.Library,
                 {
@@ -3186,50 +3187,61 @@ local aa = {
                 e(
                 "ScrollingFrame",
                 {
-                    Size = UDim2.new(1, -5, 1, -10),
-                    Position = UDim2.fromOffset(5, 5),
+                    Active = true,
+                    Size = UDim2.new(1, -5, 1, j.Search and -43 or -10),
+                    Position = UDim2.fromOffset(5, j.Search and 38 or 5),
                     BackgroundTransparency = 1,
                     BottomImage = "rbxassetid://6889812791",
                     MidImage = "rbxassetid://6889812721",
                     TopImage = "rbxassetid://6276641225",
                     ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255),
-                    ScrollBarImageTransparency = 0.60, -- 🟢 ปรับโปร่งใสเหลือ 15% (มองเห็นชัด)
-                    ScrollBarThickness = 4, -- 🟢 หนา 4px เท่าเดิม
+                    ScrollBarImageTransparency = 0.60,
+                    ScrollBarThickness = 4,
                     BorderSizePixel = 0,
                     CanvasSize = UDim2.fromScale(0, 0)
                 },
                 {s}
             )
             
-            -- 🟢 บันทึก Scrollbar ของ Dropdown เข้าสู่ระบบ RGB
             table.insert(c.RGBScrollbars, t)
 
-            local u =
-                e(
-                "Frame",
-                {Size = UDim2.fromScale(1, 0.6), ThemeTag = {BackgroundColor3 = "DropdownHolder"}},
-                {
-                    t,
-                    e("UICorner", {CornerRadius = UDim.new(0, 7)}),
-                    e(
-                        "UIStroke",
-                        {ApplyStrokeMode = Enum.ApplyStrokeMode.Border, ThemeTag = {Color = "DropdownBorder"}}
-                    ),
-                    e(
-                        "ImageLabel",
-                        {
-                            BackgroundTransparency = 1,
-                            Image = "http://www.roblox.com/asset/?id=5554236805",
-                            ScaleType = Enum.ScaleType.Slice,
-                            SliceCenter = Rect.new(23, 23, 277, 277),
-                            Size = UDim2.fromScale(1, 1) + UDim2.fromOffset(30, 30),
-                            Position = UDim2.fromOffset(-15, -15),
-                            ImageColor3 = Color3.fromRGB(0, 0, 0),
-                            ImageTransparency = 0.1
-                        }
-                    )
-                }
-            )
+            local SearchBar, SearchBox, SearchStroke, rgbGlow
+            if j.Search then
+                SearchBar = e("Frame", { Size = UDim2.new(1, -10, 0, 28), Position = UDim2.fromOffset(5, 5), BackgroundTransparency = 0.15, ThemeTag = { BackgroundColor3 = "DropdownFrame" }, ZIndex = 24 }, {
+                    e("UICorner", { CornerRadius = UDim.new(0, 8) }),
+                    e("UIStroke", { Name = "Stroke", Transparency = 0.45, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, ThemeTag = { Color = "DropdownBorder" } }),
+                    e("ImageLabel", { Image = "rbxassetid://10734943674", BackgroundTransparency = 1, Size = UDim2.fromOffset(16, 16), Position = UDim2.fromOffset(8, 6), ZIndex = 25, ThemeTag = { ImageColor3 = "SubText" } })
+                })
+                SearchBox = e("TextBox", { PlaceholderText = "Search...", ClearTextOnFocus = false, Text = "", TextSize = 14, FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Medium, Enum.FontStyle.Normal), TextXAlignment = Enum.TextXAlignment.Left, BackgroundTransparency = 1, ThemeTag = { TextColor3 = "SubText", PlaceholderColor3 = "SubText" }, Parent = SearchBar, Size = UDim2.new(1, -34, 1, 0), Position = UDim2.fromOffset(28, 0), ZIndex = 24 })
+                SearchStroke = SearchBar:FindFirstChild("Stroke")
+                rgbGlow = e("UIGradient", { Rotation = 0 })
+                
+                c.AddSignal(SearchBox.Focused, function()
+                    if SearchStroke then
+                        SearchStroke.Color = Color3.fromRGB(255, 255, 255)
+                        SearchStroke.Transparency = 0
+                        rgbGlow.Parent = SearchStroke
+                        table.insert(c.GradientBorders, rgbGlow)
+                    end
+                end)
+                c.AddSignal(SearchBox.FocusLost, function()
+                    if SearchStroke then
+                        rgbGlow.Parent = nil
+                        c.OverrideTag(SearchStroke, { Color = "DropdownBorder" })
+                        SearchStroke.Transparency = 0.45
+                    end
+                end)
+            end
+
+            local uItems = {
+                t,
+                e("UICorner", {CornerRadius = UDim.new(0, 7)}),
+                e("UIStroke", {ApplyStrokeMode = Enum.ApplyStrokeMode.Border, ThemeTag = {Color = "DropdownBorder"}}),
+                e("ImageLabel", { BackgroundTransparency = 1, Image = "http://www.roblox.com/asset/?id=5554236805", ScaleType = Enum.ScaleType.Slice, SliceCenter = Rect.new(23, 23, 277, 277), Size = UDim2.fromScale(1, 1) + UDim2.fromOffset(30, 30), Position = UDim2.fromOffset(-15, -15), ImageColor3 = Color3.fromRGB(0, 0, 0), ImageTransparency = 0.1 })
+            }
+            if SearchBar then table.insert(uItems, SearchBar) end
+
+            local u = e("Frame", {Size = UDim2.fromScale(1, 0.6), ThemeTag = {BackgroundColor3 = "DropdownHolder"}}, uItems)
             local v =
                 e(
                 "Frame",
@@ -3245,14 +3257,38 @@ local aa = {
                     v.Position = UDim2.fromOffset(p.AbsolutePosition.X - 1, p.AbsolutePosition.Y - 5 - w)
                 end, 0
             local y, z = function()
-                    if #l.Values > 10 then
+                    local visibleCount = 0
+                    for _, child in next, t:GetChildren() do
+                        if not child:IsA("UIListLayout") and child.Visible then
+                            visibleCount = visibleCount + 1
+                        end
+                    end
+                    local targetHeight = s.AbsoluteContentSize.Y + (j.Search and 43 or 10)
+                    if visibleCount > 10 then
                         v.Size = UDim2.fromOffset(x, 392)
                     else
-                        v.Size = UDim2.fromOffset(x, s.AbsoluteContentSize.Y + 10)
+                        v.Size = UDim2.fromOffset(x, targetHeight)
                     end
                 end, function()
                     t.CanvasSize = UDim2.fromOffset(0, s.AbsoluteContentSize.Y)
                 end
+            
+            if SearchBox then
+                c.AddSignal(SearchBox:GetPropertyChangedSignal("Text"), function()
+                    local txt = SearchBox.Text:lower()
+                    for _, element in next, t:GetChildren() do
+                        if not element:IsA("UIListLayout") then
+                            local btnLbl = element:FindFirstChild("ButtonLabel")
+                            if btnLbl then
+                                element.Visible = (txt == "" or btnLbl.Text:lower():find(txt, 1, true) ~= nil)
+                            end
+                        end
+                    end
+                    z()
+                    y()
+                end)
+            end
+
             w()
             y()
             c.AddSignal(p:GetPropertyChangedSignal "AbsolutePosition", w)
@@ -3279,6 +3315,7 @@ local aa = {
                 l.Opened = true
                 A.ScrollingEnabled = false
                 v.Visible = true
+                if SearchBox then SearchBox.Text = "" end
                 af:Create(
                     u,
                     TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
@@ -3827,7 +3864,6 @@ local aa = {
             d.Content = d.Content or ""
             local e = ac(ag.Element)(d.Title, d.Content, aj.Container, false)
             e.Frame.BackgroundTransparency = 0.92
-            e.Border.Transparency = 0.6
             return e
         end
         return aj
