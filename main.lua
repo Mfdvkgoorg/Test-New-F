@@ -1475,17 +1475,12 @@ local aa = {
                 "TextButton",
                 {
                     Size = UDim2.new(1, 0, 0, 34),
-                    BackgroundTransparency = 0.92,
+                    BackgroundTransparency = 0.85,
                     Parent = s,
                     ThemeTag = {BackgroundColor3 = "Tab"}
                 },
                 {
                     k("UICorner", {CornerRadius = UDim.new(0, 6)}),
-                    k("UIStroke", {
-                        Transparency = 0.7,
-                        ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-                        ThemeTag = {Color = "ElementBorder"}
-                    }),
                     k(
                         "TextLabel",
                         {
@@ -1563,29 +1558,29 @@ local aa = {
                     x.ContainerFrame.CanvasSize = UDim2.new(0, 0, 0, y.AbsoluteContentSize.Y + 2)
                 end
             )
-            x.Motor, x.SetTransparency = j.SpringMotor(0.92, x.Frame, "BackgroundTransparency")
+            x.Motor, x.SetTransparency = j.SpringMotor(0.85, x.Frame, "BackgroundTransparency")
             j.AddSignal(
                 x.Frame.MouseEnter,
                 function()
-                    x.SetTransparency(x.Selected and 0.85 or 0.87)
+                    x.SetTransparency(x.Selected and 0.55 or 0.75)
                 end
             )
             j.AddSignal(
                 x.Frame.MouseLeave,
                 function()
-                    x.SetTransparency(x.Selected and 0.89 or 0.92)
+                    x.SetTransparency(x.Selected and 0.65 or 0.85)
                 end
             )
             j.AddSignal(
                 x.Frame.MouseButton1Down,
                 function()
-                    x.SetTransparency(0.92)
+                    x.SetTransparency(0.9)
                 end
             )
             j.AddSignal(
                 x.Frame.MouseButton1Up,
                 function()
-                    x.SetTransparency(x.Selected and 0.85 or 0.89)
+                    x.SetTransparency(x.Selected and 0.55 or 0.75)
                 end
             )
             j.AddSignal(
@@ -1612,10 +1607,10 @@ local aa = {
             local r = o.Window
             o.SelectedTab = q
             for s, t in next, o.Tabs do
-                t.SetTransparency(1)
+                t.SetTransparency(0.85)
                 t.Selected = false
             end
-            o.Tabs[q].SetTransparency(0.89)
+            o.Tabs[q].SetTransparency(0.65)
             o.Tabs[q].Selected = true
             r.TabDisplay.Text = o.Tabs[q].Name
             r.SelectorPosMotor:setGoal(l(o:GetCurrentTabPos(), {frequency = 6}))
