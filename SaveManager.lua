@@ -415,12 +415,12 @@ local SaveManager = {} do
 
         shareSection:AddParagraph({
             Title = "How To Import Config",
-            Content = "Type Your Desired Name in The 'Config name'\n\nBox Above Before Pasting Your Code."
+            Content = "Type Your Desired Name in The 'Config name'\nBox Above Before Pasting Your Code."
         })
 
         shareSection:AddParagraph({
             Title = "วิธีนำเข้าคอนฟิก",
-            Content = "พิมพ์ชื่อที่ต้องการในช่อง 'Config name'ด้านบนก่อน\n\nแล้วจึงวางโค้ดในช่อง Import"
+            Content = "พิมพ์ชื่อที่ต้องการในช่อง 'Config name'ด้านบนก่อน\nแล้วจึงวางโค้ดในช่อง Import"
         })
 
         shareSection:AddButton({
