@@ -4,6 +4,7 @@ local FloatingButtonManager = {}
 FloatingButtonManager.Folder = "FloatingButtons"
 FloatingButtonManager.Buttons = {}
 FloatingButtonManager.Library = nil
+FloatingButtonManager.ShowConfigUI = false -- เพิ่มสวิตช์ปิดเปิดตรงนี้ จะปิด Floating buttons config ไม่ให้แสดงใน ui ทั้งหมดเลย
 
 local function serializeUDim2(u)
     return {
@@ -131,6 +132,8 @@ function FloatingButtonManager:LoadAutoloadConfig()
 end
 
 function FloatingButtonManager:BuildConfigSection(tab)
+    if not self.ShowConfigUI then return end -- ถ้าสวิตช์เป็น false ให้เด้งออกทันที ไม่สร้าง ui ตรงส่วนนี้
+
     assert(self.Library, "Must set FloatingButtonManager.Library")
 
     local section = tab:AddSection("Floating Buttons Config")
