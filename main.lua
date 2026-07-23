@@ -2340,7 +2340,7 @@ local aa = {
             local I, J = 0, 0
             v.SelectorPosMotor:onStep(
                 function(K)
-                    D.Position = UDim2.new(0, 0, 0, K + 17)
+                    D.Position = UDim2.new(0, 0, 0, K + 17 + v.TabHolder.Position.Y.Offset)
                     local L = tick()
                     local M = L - J
                     if I ~= nil then
