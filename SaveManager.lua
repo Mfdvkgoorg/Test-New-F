@@ -6,6 +6,8 @@ local B64C = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 local B64M = {}
 for i = 1, 64 do B64M[B64C:sub(i, i)] = i - 1 end
 
+local bxor = bit32 and bit32.bxor or bit and bit.bxor
+
 local function b64enc(str)
     local out = {}
     local len = #str
@@ -14,9 +16,9 @@ local function b64enc(str)
         n2 = n2 or 0
         n3 = n3 or 0
         local v = n1 * 65536 + n2 * 256 + n3
-        local c1 = bit32.rshift(v, 18) % 64
-        local c2 = bit32.rshift(v, 12) % 64
-        local c3 = bit32.rshift(v, 6) % 64
+        local c1 = math.floor(v / 262144) % 64
+        local c2 = math.floor(v / 4096) % 64
+        local c3 = math.floor(v / 64) % 64
         local c4 = v % 64
         table.insert(out, B64C:sub(c1+1, c1+1))
         table.insert(out, B64C:sub(c2+1, c2+1))
@@ -28,7 +30,7 @@ end
 
 local function b64dec(s)
     s = s:gsub("[^A-Za-z0-9+/]", "")
-    local out = table.create(math.floor(#s / 4) * 3)
+    local out = {}
     local n = 0
     for i = 1, #s, 4 do
         local v, cnt = 0, 0
@@ -46,11 +48,11 @@ local function b64dec(s)
 end
 
 local function cryptXOR(data, key)
-    local result = table.create(#data)
+    local result = {}
     for i = 1, #data do
         local byte = data:byte(i)
         local keyByte = key:byte((i - 1) % #key + 1)
-        result[i] = string.char(bit32.bxor(byte, keyByte))
+        result[i] = string.char(bxor(byte, keyByte))
     end
     return table.concat(result)
 end
