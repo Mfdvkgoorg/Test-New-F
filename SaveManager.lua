@@ -413,6 +413,16 @@ local SaveManager = {} do
         -- 🔗 สร้าง Section: Share & Load ล่างสุด
         local shareSection = tab:AddSection("Share & Load")
 
+        shareSection:AddParagraph({
+            Title = "How To Import Config",
+            Content = "Type Your Desired Name in The 'Config name'\n\nBox Above Before Pasting Your Code."
+        })
+
+        shareSection:AddParagraph({
+            Title = "วิธีนำเข้าคอนฟิก",
+            Content = "พิมพ์ชื่อที่ต้องการในช่อง 'Config name'ด้านบนก่อน\n\nแล้วจึงวางโค้ดในช่อง Import"
+        })
+
         shareSection:AddButton({
             Title = "Export Config",
             Description = "ส่งออกการตั้งค่าทั้งหมด",
@@ -455,7 +465,7 @@ local SaveManager = {} do
             Title = "Import Config",
             Description = "นำเข้าตั้งค่าทั้งหมด",
             Default = "",
-            Placeholder = "Paste Base64 here...",
+            Placeholder = "Paste Config here...",
             Numeric = false,
             Finished = true
         })
@@ -472,12 +482,12 @@ local SaveManager = {} do
                     -- ดึงชื่อมาจากช่อง Config Name ถ้าว่างจะสุ่มชื่อให้
                     local name = SaveManager.Options.SaveManager_ConfigName.Value
                     if name:gsub(" ", "") == "" then 
-                        name = "Imported_" .. math.random(1000, 9999)
+                        name = "TaoBa_" .. math.random(1, 99)
                     end
 
                     self.Library.Window:Dialog({
-                        Title = "What do you want to name this config?",
-                        Content = "ต้องการตั้งชื่อคอนฟิกนี้ว่าอะไร?\n\nปัจจุบันจะใช้ชื่อ: " .. name .. "\n(คุณสามารถเปลี่ยนได้โดยการพิมพ์ในช่อง Config name ด้านบนก่อนวางโค้ด)",
+                        Title = "Confirm Import",
+                        Content = "ยืนยันการนำเข้าคอนฟิกชื่อ: " .. name,
                         Buttons = {
                             {
                                 Title = "✅ Confirm",
@@ -493,7 +503,7 @@ local SaveManager = {} do
                                     self.Library:Notify({
                                         Title = "🟢Configuration Imported Successfully",
                                         Content = "นำเข้าคอนฟิกสำเร็จ✅",
-                                        Duration = 5
+                                        Duration = 7
                                     })
                                     ImportInput:SetValue("") -- ล้างช่องวาง
                                 end
@@ -508,9 +518,9 @@ local SaveManager = {} do
                     })
                 else
                     self.Library:Notify({
-                        Title = "Error",
+                        Title = "Import Code Is Invalid or Damaged!",
                         Content = "โค้ดนำเข้าไม่ถูกต้องหรือเสียหาย!",
-                        Duration = 5
+                        Duration = 7
                     })
                     ImportInput:SetValue("")
                 end
@@ -529,3 +539,4 @@ local SaveManager = {} do
 end
 
 return SaveManager
+
