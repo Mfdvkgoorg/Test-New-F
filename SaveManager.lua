@@ -271,17 +271,15 @@ local SaveManager = {} do
             local success, err = self:Load(name)
             if not success then
                 return self.Library:Notify({
-                    Title = "Interface",
-                    Content = "Config loader",
-                    SubContent = "Failed to load autoload config: " .. err,
+                    Title = "⚠️ Failed to load autoload config",
+                    Content = "โหลดออโต้คอนฟิกไม่สำเร็จ: " .. err,
                     Duration = 7
                 })
             end
 
             self.Library:Notify({
-                Title = "Interface",
-                Content = "Config loader",
-                SubContent = string.format("Auto loaded config %q", name),
+                Title = "✅ Auto loaded config",
+                Content = string.format("โหลดออโต้คอนฟิก %q สำเร็จ", name),
                 Duration = 7
             })
         end
@@ -301,7 +299,7 @@ local SaveManager = {} do
             Callback = function()
                 local name = SaveManager.Options.SaveManager_ConfigList.Value
                 if not name or name == "" then
-                    return self.Library:Notify({ Title = "Error", Content = "Please select a config to delete!", Duration = 3 })
+                    return self.Library:Notify({ Title = "⚠️ Error: No Config Selected", Content = "กรุณาเลือกคอนฟิกที่ต้องการลบ!", Duration = 7 })
                 end
 
                 self.Library.Window:Dialog({
@@ -338,9 +336,8 @@ local SaveManager = {} do
 
                 if name:gsub(" ", "") == "" then 
                     return self.Library:Notify({
-                        Title = "Interface",
-                        Content = "Config loader",
-                        SubContent = "Invalid config name (empty)",
+                        Title = "⚠️ Invalid config name (Do not leave blank)",
+                        Content = "ชื่อคอนฟิกไม่ถูกต้อง (ห้ามเว้นว่าง)",
                         Duration = 7
                     })
                 end
@@ -348,17 +345,15 @@ local SaveManager = {} do
                 local success, err = self:Save(name)
                 if not success then
                     return self.Library:Notify({
-                        Title = "Interface",
-                        Content = "Config loader",
-                        SubContent = "Failed to save config: " .. err,
+                        Title = "❌ Failed to save config",
+                        Content = "บันทึกคอนฟิกไม่สำเร็จ: " .. err,
                         Duration = 7
                     })
                 end
 
                 self.Library:Notify({
-                    Title = "Interface",
-                    Content = "Config loader",
-                    SubContent = string.format("Created config %q", name),
+                    Title = "✅ Config Created",
+                    Content = string.format("สร้างคอนฟิก %q สำเร็จ", name),
                     Duration = 7
                 })
 
@@ -373,17 +368,15 @@ local SaveManager = {} do
             local success, err = self:Load(name)
             if not success then
                 return self.Library:Notify({
-                    Title = "Interface",
-                    Content = "Config loader",
-                    SubContent = "Failed to load config: " .. err,
+                    Title = "❌ Failed to load config",
+                    Content = "โหลดคอนฟิกไม่สำเร็จ: " .. err,
                     Duration = 7
                 })
             end
 
             self.Library:Notify({
-                Title = "Interface",
-                Content = "Config loader",
-                SubContent = string.format("Loaded config %q", name),
+                Title = "✅ Config Loaded",
+                Content = string.format("โหลดคอนฟิก %q สำเร็จ", name),
                 Duration = 7
             })
         end})
@@ -394,17 +387,15 @@ local SaveManager = {} do
             local success, err = self:Save(name)
             if not success then
                 return self.Library:Notify({
-                    Title = "Interface",
-                    Content = "Config loader",
-                    SubContent = "Failed to overwrite config: " .. err,
+                    Title = "❌ Failed to overwrite config",
+                    Content = "เขียนทับคอนฟิกไม่สำเร็จ: " .. err,
                     Duration = 7
                 })
             end
 
             self.Library:Notify({
-                Title = "Interface",
-                Content = "Config loader",
-                SubContent = string.format("Overwrote config %q", name),
+                Title = "✅ Config Overwrote",
+                Content = string.format("เขียนทับคอนฟิก %q สำเร็จ", name),
                 Duration = 7
             })
         end})
@@ -420,9 +411,8 @@ local SaveManager = {} do
             writefile(self.Folder .. "/settings/autoload.txt", name)
             AutoloadButton:SetDesc("Current autoload config: " .. name)
             self.Library:Notify({
-                Title = "Interface",
-                Content = "Config loader",
-                SubContent = string.format("Set %q to auto load", name),
+                Title = "✅ Set as autoload",
+                Content = string.format("ตั้งค่า %q เป็นออโต้โหลดสำเร็จ", name),
                 Duration = 7
             })
         end})
@@ -437,12 +427,12 @@ local SaveManager = {} do
 
         shareSection:AddParagraph({
             Title = "How To Import Config",
-            Content = "Type Your Desired Name in The 'Config name'\nBox Above Before Pasting Your Code."
+            Content = "Type name in 'Config name' box.\nPC: Paste code. Mobile: DO NOT paste\njust copy code to clipboard and click Import."
         })
 
         shareSection:AddParagraph({
             Title = "วิธีนำเข้าคอนฟิก",
-            Content = "พิมพ์ชื่อที่ต้องการในช่อง 'Config name'ด้านบนก่อน\nแล้วจึงวางโค้ดในช่อง Import"
+            Content = "พิมพ์ชื่อคอนฟิกด้านบน (คอมฯ วางโค้ดได้เลย)\nส่วนมือถือห้ามวางโค้ด!\nให้คัดลอกโค้ดเก็บไว้\nแล้วกดปุ่ม Import ได้เลย"
         })
 
         shareSection:AddButton({
@@ -482,19 +472,40 @@ local SaveManager = {} do
             end
         })
 
-        local ImportInput
-        ImportInput = shareSection:AddInput("SaveManager_ImportConfig", {
-            Title = "Import Config",
-            Description = "นำเข้าตั้งค่าทั้งหมด",
+        local ImportInput = shareSection:AddInput("SaveManager_ImportConfig", {
+            Title = "Import Config (MB left blank)",
+            Description = "วางคอนฟิกที่นี่ (มือถือปล่อยว่างไว้ไม่ต้องใส่)",
             Default = "",
             Placeholder = "Paste Config here...",
             Numeric = false,
             Finished = true
         })
 
-        ImportInput:OnChanged(function(value)
-            if value and value ~= "" then
-                -- ลองถอดรหัสแบบ OBF ก่อน
+        -- ✅ ปุ่มอัจฉริยะ ทำหน้าที่ดึงข้อมูลอย่างปลอดภัย
+        shareSection:AddButton({
+            Title = "📥 Import Config",
+            Description = "มือถือก๊อปคอนฟิกไว้เฉยๆ แล้วกดปุ่มนี้เลย",
+            Callback = function()
+                local value = ImportInput.Value
+                
+                -- 💡 จุดสำคัญ! ถ้าช่อง Input ว่างเปล่า ให้ดึงจากคลิปบอร์ดแทน
+                if (not value or value == "") and getclipboard then
+                    local success, clipText = pcall(getclipboard)
+                    if success and clipText and clipText ~= "" then
+                        value = clipText
+                    end
+                end
+
+                -- แจ้งเตือนถ้าผู้ใช้ไม่ได้วางโค้ดและไม่ได้ก๊อปปี้อะไรมาเลย
+                if not value or value == "" then
+                    return self.Library:Notify({
+                        Title = "⚠️ Copy config before pressing the button.",
+                        Content = "คัดลอกคอนฟิกเก็บไว้ก่อนกดปุ่ม!",
+                        Duration = 5
+                    })
+                end
+
+                -- ลองถอดรหัสแบบ OBF
                 local success, result = pcall(function()
                     local targetData = value
                     if UseEncryption then
@@ -503,7 +514,7 @@ local SaveManager = {} do
                     return httpService:JSONDecode(targetData)
                 end)
 
-                -- ถ้า OBF พัง ให้ลองโหลดแบบดิบเผื่อเขาวางโค้ดดิบมา
+                -- ถ้า OBF พัง ให้ลองโหลดแบบดิบ
                 if not success or type(result) ~= "table" or not result.objects then
                     success, result = pcall(function()
                         return httpService:JSONDecode(value)
@@ -511,14 +522,13 @@ local SaveManager = {} do
                 end
 
                 if success and type(result) == "table" and result.objects then
-                    -- ดึงชื่อมาจากช่อง Config Name ถ้าว่างจะสุ่มชื่อให้
                     local name = SaveManager.Options.SaveManager_ConfigName.Value
-                    if name:gsub(" ", "") == "" then 
-                        name = "TaoBa_" .. math.random(1, 99)
+                    if not name or name:gsub(" ", "") == "" then 
+                        name = "TaoBa_" .. math.random(100, 999)
                     end
 
                     self.Library.Window:Dialog({
-                        Title = "Confirm Import",
+                        Title = "✅ Confirm Import",
                         Content = "ยืนยันการนำเข้าคอนฟิกชื่อ: " .. name,
                         Buttons = {
                             {
@@ -526,18 +536,17 @@ local SaveManager = {} do
                                 Callback = function()
                                     local path = self.Folder .. "/settings/" .. name .. ".json"
                                     local encoded = httpService:JSONEncode(result)
-                                    writefile(path, encoded) -- สร้างไฟล์ JSON
+                                    writefile(path, encoded) 
                                     
-                                    -- อัพเดตและเลือก Dropdown ให้เป็นอันใหม่
                                     SaveManager.Options.SaveManager_ConfigList:SetValues(self:RefreshConfigList())
                                     SaveManager.Options.SaveManager_ConfigList:SetValue(name)
                                     
                                     self.Library:Notify({
-                                        Title = "🟢Configuration Imported Successfully",
-                                        Content = "นำเข้าคอนฟิกสำเร็จ✅",
+                                        Title = "🟢 Configuration Imported",
+                                        Content = "นำเข้าคอนฟิก '"..name.."' สำเร็จแล้ว✅",
                                         Duration = 7
                                     })
-                                    ImportInput:SetValue("") -- ล้างช่องวาง
+                                    ImportInput:SetValue("") 
                                 end
                             },
                             { 
@@ -550,14 +559,13 @@ local SaveManager = {} do
                     })
                 else
                     self.Library:Notify({
-                        Title = "Import Code Is Invalid or Damaged!",
-                        Content = "โค้ดนำเข้าไม่ถูกต้องหรือเสียหาย!",
-                        Duration = 7
+                        Title = "❌ (Copy config and press button.)",
+                        Content = "ให้คัดลอกคอนฟิกแล้วกดปุ่ม",
+                        Duration = 8
                     })
-                    ImportInput:SetValue("")
                 end
             end
-        end)
+        })
 
         -- อย่าลืมเอาช่อง Import ยัดเข้า Ignore จะได้ไม่ถูกดึงไปเซฟรวมในไฟล์
         SaveManager:SetIgnoreIndexes({ 
