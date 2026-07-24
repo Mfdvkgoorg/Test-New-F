@@ -426,13 +426,13 @@ local SaveManager = {} do
         local shareSection = tab:AddSection("Share & Load")
 
         shareSection:AddParagraph({
-            Title = "How To Import Config",
-            Content = "Type name in 'Config name' box.\nPC: Paste code. Mobile: DO NOT paste\njust copy code to clipboard and click Import."
+            Title = "How To Import Config (PC Only)",
+            Content = "Type Your Desired Name in The 'Config name'\nBox Above Before Pasting Your Code."
         })
 
         shareSection:AddParagraph({
-            Title = "วิธีนำเข้าคอนฟิก",
-            Content = "พิมพ์ชื่อคอนฟิกด้านบน (คอมฯ วางโค้ดได้เลย)\nส่วนมือถือห้ามวางโค้ด!\nให้คัดลอกโค้ดเก็บไว้\nแล้วกดปุ่ม Import ได้เลย"
+            Title = "วิธีนำเข้าคอนฟิก (เฉพาะคอม)",
+            Content = "พิมพ์ชื่อที่ต้องการในช่อง 'Config name' ด้านบนก่อน\nแล้วจึงวางโค้ดในช่อง Import (มือถือไม่รองรับ)"
         })
 
         shareSection:AddButton({
@@ -457,9 +457,9 @@ local SaveManager = {} do
                                 local success, encoded = pcall(httpService.JSONEncode, httpService, data)
                                 if success then
                                     local finalOutput = EncryptConfig(encoded)
-                                    setclipboard(finalOutput) -- จะส่งออกเป็นแบบดิบหรือแบบเข้ารหัส ขึ้นอยู่กับสวิตช์ UseEncryption แล้ว
+                                    setclipboard(finalOutput) 
                                     self.Library:Notify({
-                                        Title = "🟢Configuration Exported Successfully",
+                                        Title = "🟢 Configuration Exported Successfully",
                                         Content = "ส่งออกคอนฟิกสำเร็จ✅",
                                         Duration = 5
                                     })
@@ -472,39 +472,19 @@ local SaveManager = {} do
             end
         })
 
-        local ImportInput = shareSection:AddInput("SaveManager_ImportConfig", {
-            Title = "Import Config (MB left blank)",
-            Description = "วางคอนฟิกที่นี่ (มือถือปล่อยว่างไว้ไม่ต้องใส่)",
+        local ImportInput
+        ImportInput = shareSection:AddInput("SaveManager_ImportConfig", {
+            Title = "Import Config PC Only",
+            Description = "วางคอนฟิกที่นี่ (เฉพาะคอมเท่านั้น)",
             Default = "",
             Placeholder = "Paste Config here...",
             Numeric = false,
             Finished = true
         })
 
-        -- ✅ ปุ่มอัจฉริยะ ทำหน้าที่ดึงข้อมูลอย่างปลอดภัย
-        shareSection:AddButton({
-            Title = "📥 Import Config",
-            Description = "มือถือก๊อปคอนฟิกไว้เฉยๆ แล้วกดปุ่มนี้เลย",
-            Callback = function()
-                local value = ImportInput.Value
-                
-                -- 💡 จุดสำคัญ! ถ้าช่อง Input ว่างเปล่า ให้ดึงจากคลิปบอร์ดแทน
-                if (not value or value == "") and getclipboard then
-                    local success, clipText = pcall(getclipboard)
-                    if success and clipText and clipText ~= "" then
-                        value = clipText
-                    end
-                end
-
-                -- แจ้งเตือนถ้าผู้ใช้ไม่ได้วางโค้ดและไม่ได้ก๊อปปี้อะไรมาเลย
-                if not value or value == "" then
-                    return self.Library:Notify({
-                        Title = "⚠️ Copy config before pressing the button.",
-                        Content = "คัดลอกคอนฟิกเก็บไว้ก่อนกดปุ่ม!",
-                        Duration = 5
-                    })
-                end
-
+        -- ✅ ใช้ระบบ OnChanged วางปุ๊บอ่านปั๊บสำหรับชาว PC
+        ImportInput:OnChanged(function(value)
+            if value and value ~= "" then
                 -- ลองถอดรหัสแบบ OBF
                 local success, result = pcall(function()
                     local targetData = value
@@ -559,13 +539,14 @@ local SaveManager = {} do
                     })
                 else
                     self.Library:Notify({
-                        Title = "❌ (Copy config and press button.)",
-                        Content = "ให้คัดลอกคอนฟิกแล้วกดปุ่ม",
+                        Title = "❌ Import Failed (Invalid or Damaged)",
+                        Content = "โค้ดเสียหาย! (ฟีเจอร์นี้รองรับเฉพาะ PC เท่านั้น)",
                         Duration = 8
                     })
+                    ImportInput:SetValue("")
                 end
             end
-        })
+        end)
 
         -- อย่าลืมเอาช่อง Import ยัดเข้า Ignore จะได้ไม่ถูกดึงไปเซฟรวมในไฟล์
         SaveManager:SetIgnoreIndexes({ 
