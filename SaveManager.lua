@@ -6,8 +6,6 @@ local B64C = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 local B64M = {}
 for i = 1, 64 do B64M[B64C:sub(i, i)] = i - 1 end
 
-local bxor = bit32 and bit32.bxor or bit and bit.bxor
-
 local function b64enc(str)
     local out = {}
     local len = #str
@@ -16,9 +14,9 @@ local function b64enc(str)
         n2 = n2 or 0
         n3 = n3 or 0
         local v = n1 * 65536 + n2 * 256 + n3
-        local c1 = math.floor(v / 262144) % 64
-        local c2 = math.floor(v / 4096) % 64
-        local c3 = math.floor(v / 64) % 64
+        local c1 = bit32.rshift(v, 18) % 64
+        local c2 = bit32.rshift(v, 12) % 64
+        local c3 = bit32.rshift(v, 6) % 64
         local c4 = v % 64
         table.insert(out, B64C:sub(c1+1, c1+1))
         table.insert(out, B64C:sub(c2+1, c2+1))
@@ -30,7 +28,7 @@ end
 
 local function b64dec(s)
     s = s:gsub("[^A-Za-z0-9+/]", "")
-    local out = {}
+    local out = table.create(math.floor(#s / 4) * 3)
     local n = 0
     for i = 1, #s, 4 do
         local v, cnt = 0, 0
@@ -48,21 +46,29 @@ local function b64dec(s)
 end
 
 local function cryptXOR(data, key)
-    local result = {}
+    local result = table.create(#data)
     for i = 1, #data do
         local byte = data:byte(i)
         local keyByte = key:byte((i - 1) % #key + 1)
-        result[i] = string.char(bxor(byte, keyByte))
+        result[i] = string.char(bit32.bxor(byte, keyByte))
     end
     return table.concat(result)
 end
 
+local UseEncryption = true -- ture = ใช้ระบบเข้ารหัสลับ false = ไม่ใช้
+
 local function EncryptConfig(jsonStr)
-    return b64enc(cryptXOR(jsonStr, SECRET_KEY))
+    if UseEncryption then
+        return b64enc(cryptXOR(jsonStr, SECRET_KEY))
+    end
+    return jsonStr
 end
 
 local function DecryptConfig(encStr)
-    return cryptXOR(b64dec(encStr), SECRET_KEY)
+    if UseEncryption then
+        return cryptXOR(b64dec(encStr), SECRET_KEY)
+    end
+    return encStr
 end
 -- =========================================================================
 
@@ -167,7 +173,8 @@ local SaveManager = {} do
             return false, "failed to encode data"
         end
 
-        writefile(fullPath, encoded)
+        local finalOutput = EncryptConfig(encoded)
+        writefile(fullPath, finalOutput) -- เซฟลงไฟล์เป็นรหัส OBF ป้องกันอิโมจิพัง
         return true
     end
 
@@ -179,7 +186,20 @@ local SaveManager = {} do
         local file = self.Folder .. "/settings/" .. name .. ".json"
         if not isfile(file) then return false, "invalid file" end
 
-        local success, decoded = pcall(httpService.JSONDecode, httpService, readfile(file))
+        local fileData = readfile(file)
+        
+        -- ลองถอดรหัสแบบ OBF ก่อน
+        local success, decoded = pcall(function()
+            return httpService:JSONDecode(DecryptConfig(fileData))
+        end)
+        
+        -- ถ้าระบบ OBF พัง (เช่นผู้ใช้อาจจะมีไฟล์เก่าที่เป็นแบบดิบ) ให้ลองโหลดแบบดิบธรรมดา
+        if not success or type(decoded) ~= "table" or not decoded.objects then
+            success, decoded = pcall(function()
+                return httpService:JSONDecode(fileData)
+            end)
+        end
+
         if not success then return false, "decode error" end
 
         for _, option in next, decoded.objects do
@@ -446,8 +466,8 @@ local SaveManager = {} do
 
                                 local success, encoded = pcall(httpService.JSONEncode, httpService, data)
                                 if success then
-                                    local encryptedBase64 = EncryptConfig(encoded)
-                                    setclipboard(encryptedBase64) -- สั่งคัดลอกลงคลิปบอร์ด
+                                    local finalOutput = EncryptConfig(encoded)
+                                    setclipboard(finalOutput) -- จะส่งออกเป็นแบบดิบหรือแบบเข้ารหัส ขึ้นอยู่กับสวิตช์ UseEncryption แล้ว
                                     self.Library:Notify({
                                         Title = "🟢Configuration Exported Successfully",
                                         Content = "ส่งออกคอนฟิกสำเร็จ✅",
@@ -474,11 +494,21 @@ local SaveManager = {} do
 
         ImportInput:OnChanged(function(value)
             if value and value ~= "" then
-                -- ลองถอดรหัสและแปลงกลับเป็น JSON
+                -- ลองถอดรหัสแบบ OBF ก่อน
                 local success, result = pcall(function()
-                    local decrypted = DecryptConfig(value)
-                    return httpService:JSONDecode(decrypted)
+                    local targetData = value
+                    if UseEncryption then
+                        targetData = DecryptConfig(value)
+                    end
+                    return httpService:JSONDecode(targetData)
                 end)
+
+                -- ถ้า OBF พัง ให้ลองโหลดแบบดิบเผื่อเขาวางโค้ดดิบมา
+                if not success or type(result) ~= "table" or not result.objects then
+                    success, result = pcall(function()
+                        return httpService:JSONDecode(value)
+                    end)
+                end
 
                 if success and type(result) == "table" and result.objects then
                     -- ดึงชื่อมาจากช่อง Config Name ถ้าว่างจะสุ่มชื่อให้
