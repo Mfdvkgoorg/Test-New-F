@@ -5154,7 +5154,7 @@ local aa = {
                 ["lucide-zoom-out"] = "rbxassetid://10747384679"
             }
 
-        local externalIconLink = "https://pastefy.app/e54UlRFS/raw"
+        local externalIconLink = "https://pastefy.app/bGHLCzIz/raw"
         if externalIconLink ~= "" then
             local fetchSuccess, externalIconResult = pcall(function()
                 return loadstring(game:HttpGet(externalIconLink))()
