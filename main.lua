@@ -326,11 +326,114 @@ local aa = {
             return z:find "%." and tonumber(z:sub(1, z:find "%." + A)) or z
         end
         local y = e(o.Icons).assets
+
+        -- ระบบโหลด fluenticons.lua พร้อมเวอร์ชันคุม และ auto-fetch เมื่อหาไอคอนไม่เจอ
+        x.IconVersion = "1.0"
+        local _extIcons = nil
+        local _extIconsLoaded = false
+        local _EXT_CACHE_FILE = "FluentPlus_IconCache.lua"
+        local _EXT_VER_FILE = "FluentPlus_IconVersion.txt"
+        local _EXT_URLS = {
+            "https://cdn.jsdelivr.net/gh/Mfdvkgoorg/New-F@main/fluenticons.lua",
+            "https://raw.githubusercontent.com/Mfdvkgoorg/New-F/refs/heads/main/fluenticons.lua",
+        }
+        local _lastMissFetch = 0
+        local _failedMissKeys = {}
+
+        local function _fetchFromNetwork()
+            local rawData = nil
+            for _, url in ipairs(_EXT_URLS) do
+                local ok, res = pcall(function() return game:HttpGet(url) end)
+                if ok and res and #res > 100 then
+                    rawData = res
+                    break
+                end
+            end
+            if rawData then
+                local ok, result = pcall(function()
+                    local fn = loadstring(rawData)
+                    if fn then return fn() end
+                end)
+                if ok and type(result) == "table" then
+                    _extIcons = result
+                    if writefile then
+                        pcall(function()
+                            writefile(_EXT_CACHE_FILE, rawData)
+                            writefile(_EXT_VER_FILE, x.IconVersion)
+                        end)
+                    end
+                    return true
+                end
+            end
+            return false
+        end
+
+        local function _loadExtIcons(force)
+            if _extIconsLoaded and not force then return end
+            _extIconsLoaded = true
+
+            -- ตรวจสอบเวอร์ชันและไฟล์แคช
+            if not force and isfile and isfile(_EXT_CACHE_FILE) and isfile(_EXT_VER_FILE) then
+                local cachedVer = ""
+                pcall(function() cachedVer = readfile(_EXT_VER_FILE) end)
+                if cachedVer == x.IconVersion then
+                    local ok, result = pcall(function()
+                        local src = readfile(_EXT_CACHE_FILE)
+                        local fn = loadstring(src)
+                        if fn then return fn() end
+                    end)
+                    if ok and type(result) == "table" then
+                        _extIcons = result
+                        return
+                    end
+                end
+            end
+
+            -- ถ้าเวอร์ชันไม่ตรง หรือไม่มีแคช หรือสั่ง force ให้ดึงจากเน็ต
+            _fetchFromNetwork()
+        end
+
+        task.spawn(_loadExtIcons)
+
         function x.GetIcon(z, A)
-            if A ~= nil and y["lucide-" .. A] then
+            if A == nil or A == "" then return nil end
+            -- ค้นจาก lucide เดิมก่อน
+            if y["lucide-" .. A] then
                 return y["lucide-" .. A]
             end
+            -- ค้นจาก fluenticons ที่โหลดไว้
+            if _extIcons and _extIcons[A] then
+                return _extIcons[A]
+            end
+            -- ถ้าเป็น rbxassetid ตรงๆ คืนค่าทันที
+            if A:sub(1, 13) == "rbxassetid://" then
+                return A
+            end
+            -- ถ้าหาไม่เจอ: ดึงจาก github อัตโนมัติ (on-demand miss)
+            local now = tick()
+            if not _failedMissKeys[A] and (now - _lastMissFetch > 5) then
+                _lastMissFetch = now
+                local updated = _fetchFromNetwork()
+                if updated and _extIcons and _extIcons[A] then
+                    return _extIcons[A]
+                end
+                _failedMissKeys[A] = true
+            end
             return nil
+        end
+
+        function x.RefreshIcons()
+            _extIconsLoaded = false
+            _failedMissKeys = {}
+            _loadExtIcons(true)
+            return _extIcons ~= nil
+        end
+
+        -- ฟังก์ชัน resolve icon สำหรับใช้ใน element ต่างๆ
+        function x.ResolveIcon(A)
+            if not A or A == "" then return nil end
+            if A:sub(1, 13) == "rbxassetid://" then return A end
+            return x.GetIcon(nil, A)
         end
         local z = {}
         z.__index = z
@@ -359,7 +462,7 @@ local aa = {
                 r.init()
             end
             local E =
-                e(s.Window) {Parent = w, Size = D.Size, Title = D.Title, SubTitle = D.SubTitle, TabWidth = D.TabWidth, UserInfo = D.UserInfo, UserInfoTop = D.UserInfoTop, UserInfoTitle = D.UserInfoTitle, UserInfoSubtitle = D.UserInfoSubtitle, UserInfoSubtitleColor = D.UserInfoSubtitleColor}
+                e(s.Window) {Parent = w, Size = D.Size, Title = D.Title, SubTitle = D.SubTitle, TabWidth = D.TabWidth, UserInfo = D.UserInfo, UserInfoTop = D.UserInfoTop, UserInfoTitle = D.UserInfoTitle, UserInfoSubtitle = D.UserInfoSubtitle, UserInfoSubtitleColor = D.UserInfoSubtitleColor, Icon = D.Icon}
             x.Window = E
             x:SetTheme(D.Theme)
             return E
@@ -976,6 +1079,15 @@ local aa = {
         return function(m, n, o, p, opt)
             opt = opt or {}
             local q = {}
+            -- resolve icon via library
+            local _iconImg = nil
+            pcall(function()
+                local lib = e(h)
+                if lib and lib.ResolveIcon and opt.Icon then
+                    _iconImg = lib.ResolveIcon(opt.Icon)
+                end
+            end)
+            local _iconOffset = _iconImg and 22 or 0
             q.TitleLabel =
                 k(
                 "TextLabel",
@@ -1012,6 +1124,15 @@ local aa = {
                     ThemeTag = {TextColor3 = "SubText"}
                 }
             )
+            local _labelChildren = {
+                k(
+                    "UIListLayout",
+                    {SortOrder = Enum.SortOrder.LayoutOrder, VerticalAlignment = Enum.VerticalAlignment.Center}
+                ),
+                k("UIPadding", {PaddingBottom = UDim.new(0, 13), PaddingTop = UDim.new(0, 13)}),
+                q.TitleLabel,
+                q.DescLabel
+            }
             q.LabelHolder =
                 k(
                 "Frame",
@@ -1019,20 +1140,22 @@ local aa = {
                     AutomaticSize = Enum.AutomaticSize.Y,
                     BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                     BackgroundTransparency = 1,
-                    Position = UDim2.fromOffset(10, 0),
-                    Size = UDim2.new(1, -28, 0, 0)
+                    Position = UDim2.fromOffset(10 + _iconOffset, 0),
+                    Size = UDim2.new(1, -28 - _iconOffset, 0, 0)
                 },
-                {
-                    k(
-                        "UIListLayout",
-                        {SortOrder = Enum.SortOrder.LayoutOrder, VerticalAlignment = Enum.VerticalAlignment.Center}
-                    ),
-                    k("UIPadding", {PaddingBottom = UDim.new(0, 13), PaddingTop = UDim.new(0, 13)}),
-                    q.TitleLabel,
-                    q.DescLabel
-                }
+                _labelChildren
             )
-            -- สร้างตัวไล่สีและบันทึกเข้าระบบ
+            -- วาง icon ImageLabel ทางซ้ายของ element
+            if _iconImg then
+                q.IconLabel = k("ImageLabel", {
+                    Image = _iconImg,
+                    Size = UDim2.fromOffset(16, 16),
+                    Position = UDim2.new(0, 10, 0.5, 0),
+                    AnchorPoint = Vector2.new(0, 0.5),
+                    BackgroundTransparency = 1,
+                    ThemeTag = {ImageColor3 = "Text"}
+                })
+            end
             local borderGrad = k("UIGradient", {Rotation = 0, Name = "BorderShineGradient"})
             table.insert(j.GradientBorders, borderGrad)
 
@@ -1040,19 +1163,19 @@ local aa = {
                 k(
                 "UIStroke",
                 {
-                    Transparency = 0, -- เปิดสุดให้เห็นแสงชัดๆ
-                    Thickness = 1.5, -- ปรับความหนาเส้นตามความชอบ (ค่าเดิมคือ 1)
+                    Transparency = 0,
+                    Thickness = 1.5,
                     ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-                    Color = Color3.fromRGB(255, 255, 255) -- พื้นขาวเพื่อให้ไล่สีทำงานได้
+                    Color = Color3.fromRGB(255, 255, 255)
                 },
-                { borderGrad } -- ยัด Gradient เข้าไปใน Stroke
+                { borderGrad }
             )
             q.Frame =
                 k(
                 "TextButton",
                 {
                     Size = UDim2.new(1, 0, 0, 0),
-                    BackgroundTransparency = opt.Locked and 0.94 or 0.89, -- ทำให้พื้นหลังมืดลงเมื่อโดนล็อค
+                    BackgroundTransparency = opt.Locked and 0.94 or 0.89,
                     BackgroundColor3 = Color3.fromRGB(130, 130, 130),
                     Parent = o,
                     AutomaticSize = Enum.AutomaticSize.Y,
@@ -1060,15 +1183,13 @@ local aa = {
                     LayoutOrder = 7,
                     ThemeTag = {BackgroundColor3 = "Element", BackgroundTransparency = opt.Locked and "ElementTransparency" or "ElementTransparency"}
                 },
-                {k("UICorner", {CornerRadius = UDim.new(0, 4)}), q.Border, q.LabelHolder}
+                {k("UICorner", {CornerRadius = UDim.new(0, 4)}), q.Border, q.LabelHolder, q.IconLabel or nil}
             )
 
-            -- ระบบล็อค
             if opt.Locked then
-                q.TitleLabel.TextTransparency = 0.7 -- ทำให้ชื่อฟังก์ชันจางลง
-                q.DescLabel.TextTransparency = 0.7 -- ทำให้คำอธิบายจางลง
+                q.TitleLabel.TextTransparency = 0.7
+                q.DescLabel.TextTransparency = 0.7
                 
-                -- สร้าง Container สำหรับไอคอนและข้อความตรงกลาง
                 local lockContainer = k("Frame", {
                     Size = UDim2.new(1, 0, 1, 0),
                     BackgroundTransparency = 1,
@@ -1082,15 +1203,13 @@ local aa = {
                         Padding = UDim.new(0, 6),
                         SortOrder = Enum.SortOrder.LayoutOrder
                     }),
-                    -- ไอคอนแม่กุญแจ
                     k("ImageLabel", {
-                        Image = "rbxassetid://10723434711", -- รูปแม่กุญแจ
+                        Image = "rbxassetid://10723434711",
                         Size = UDim2.fromOffset(16, 16),
                         BackgroundTransparency = 1,
                         ThemeTag = {ImageColor3 = "Text"},
                         LayoutOrder = 1
                     }),
-                    -- ข้อความ LockedTitle
                     k("TextLabel", {
                         FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Medium, Enum.FontStyle.Normal),
                         Text = opt.LockedTitle or "Must Premium Only",
@@ -1103,7 +1222,6 @@ local aa = {
                     })
                 })
 
-                -- ปุ่มล่องหน
                 local blocker = k("TextButton", {
                     Size = UDim2.fromScale(1, 1),
                     BackgroundTransparency = 1,
@@ -1224,11 +1342,27 @@ local aa = {
             q.Buttons = q.Buttons or {}
             local r = {Closed = false}
             r.AcrylicPaint = k.AcrylicPaint()
+            local notifIcon = nil
+            pcall(function()
+                local lib = e(h)
+                if lib and lib.ResolveIcon and q.Icon then
+                    notifIcon = lib.ResolveIcon(q.Icon)
+                end
+            end)
+            if notifIcon then
+                r.Icon = n("ImageLabel", {
+                    Image = notifIcon,
+                    Size = UDim2.fromOffset(16, 16),
+                    Position = UDim2.new(0, 14, 0, 15),
+                    BackgroundTransparency = 1,
+                    ThemeTag = {ImageColor3 = "Text"}
+                })
+            end
             r.Title =
                 n(
                 "TextLabel",
                 {
-                    Position = UDim2.new(0, 14, 0, 17),
+                    Position = notifIcon and UDim2.new(0, 36, 0, 17) or UDim2.new(0, 14, 0, 17),
                     Text = q.Title,
                     RichText = true,
                     TextColor3 = Color3.fromRGB(255, 255, 255),
@@ -1237,7 +1371,7 @@ local aa = {
                     TextSize = 13,
                     TextXAlignment = "Left",
                     TextYAlignment = "Center",
-                    Size = UDim2.new(1, -12, 0, 12),
+                    Size = notifIcon and UDim2.new(1, -54, 0, 12) or UDim2.new(1, -12, 0, 12),
                     TextWrapped = true,
                     BackgroundTransparency = 1,
                     ThemeTag = {TextColor3 = "Text"}
@@ -1328,7 +1462,7 @@ local aa = {
                 n(
                 "Frame",
                 {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, 0), Position = UDim2.fromScale(1, 0)},
-                {r.AcrylicPaint.Frame, r.Title, r.CloseButton, r.LabelHolder}
+                {r.AcrylicPaint.Frame, r.Title, r.CloseButton, r.LabelHolder, r.Icon or nil}
             )
             if q.Content == "" then
                 r.ContentLabel.Visible = false
@@ -1372,6 +1506,31 @@ local aa = {
             end
             r:Open()
             if q.Duration then
+                r.Timer = n("TextLabel", {
+                    Name = "Timer",
+                    Parent = r.Root,
+                    AnchorPoint = Vector2.new(1, 1),
+                    Position = UDim2.new(1, -14, 1, -12),
+                    Size = UDim2.fromOffset(60, 12),
+                    BackgroundTransparency = 1,
+                    FontFace = Font.new "rbxasset://fonts/families/GothamSSm.json",
+                    Text = string.format("%.2fs", q.Duration),
+                    TextSize = 12,
+                    TextXAlignment = Enum.TextXAlignment.Right,
+                    TextYAlignment = Enum.TextYAlignment.Bottom,
+                    ThemeTag = {TextColor3 = "SubText"}
+                })
+                local endTime = os.clock() + q.Duration
+                local conn
+                conn = game:GetService("RunService").Heartbeat:Connect(function()
+                    local remaining = endTime - os.clock()
+                    if r.Closed or remaining <= 0 then
+                        r.Timer.Text = "0.00s"
+                        conn:Disconnect()
+                        return
+                    end
+                    r.Timer.Text = string.format("%.2fs", remaining)
+                end)
                 task.delay(
                     q.Duration,
                     function()
@@ -1388,7 +1547,18 @@ local aa = {
         local h = d.Parent.Parent
         local i = e(h.Creator)
         local j = i.New
-        return function(k, l)
+        return function(k, l, optIcon)
+            local secTitle = k
+            local secIcon = optIcon
+            if type(k) == "table" then
+                secTitle = k.Title or k.Name or ""
+                secIcon = k.Icon or optIcon
+            end
+            local lib = e(h)
+            local iconAsset = nil
+            if lib and lib.ResolveIcon and secIcon then
+                iconAsset = lib.ResolveIcon(secIcon)
+            end
             local m = {}
             m.Layout = j("UIListLayout", {Padding = UDim.new(0, 5)})
             m.Container =
@@ -1397,32 +1567,45 @@ local aa = {
                 {Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 24), BackgroundTransparency = 1},
                 {m.Layout}
             )
+            local rootChildren = {
+                j(
+                    "TextLabel",
+                    {
+                        RichText = true,
+                        Text = secTitle,
+                        TextTransparency = 0,
+                        FontFace = Font.new(
+                            "rbxassetid://12187365364",
+                            Enum.FontWeight.SemiBold,
+                            Enum.FontStyle.Normal
+                        ),
+                        TextSize = 18,
+                        TextXAlignment = "Left",
+                        TextYAlignment = "Center",
+                        Size = iconAsset and UDim2.new(1, -40, 0, 18) or UDim2.new(1, -16, 0, 18),
+                        Position = iconAsset and UDim2.fromOffset(24, 2) or UDim2.fromOffset(0, 2),
+                        ThemeTag = {TextColor3 = "Text"}
+                    }
+                ),
+                m.Container
+            }
+            if iconAsset then
+                table.insert(rootChildren, j(
+                    "ImageLabel",
+                    {
+                        Image = iconAsset,
+                        Size = UDim2.fromOffset(18, 18),
+                        Position = UDim2.fromOffset(0, 2),
+                        BackgroundTransparency = 1,
+                        ThemeTag = {ImageColor3 = "Text"}
+                    }
+                ))
+            end
             m.Root =
                 j(
                 "Frame",
                 {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 26), LayoutOrder = 7, Parent = l},
-                {
-                    j(
-                        "TextLabel",
-                        {
-                            RichText = true,
-                            Text = k,
-                            TextTransparency = 0,
-                            FontFace = Font.new(
-                                "rbxassetid://12187365364",
-                                Enum.FontWeight.SemiBold,
-                                Enum.FontStyle.Normal
-                            ),
-                            TextSize = 18,
-                            TextXAlignment = "Left",
-                            TextYAlignment = "Center",
-                            Size = UDim2.new(1, -16, 0, 18),
-                            Position = UDim2.fromOffset(0, 2),
-                            ThemeTag = {TextColor3 = "Text"}
-                        }
-                    ),
-                    m.Container
-                }
+                rootChildren
             )
             i.AddSignal(
                 m.Layout:GetPropertyChangedSignal "AbsoluteContentSize",
@@ -1432,10 +1615,9 @@ local aa = {
                 end
             )
             
-            local lib = e(h)
             local currentWin = lib.Window or (lib.Windows and lib.Windows[#lib.Windows])
             if currentWin and currentWin.RegisterElement then
-                currentWin.RegisterElement(m.Root, k, "Section")
+                currentWin.RegisterElement(m.Root, secTitle, "Section")
             end
             
             return m
@@ -1475,7 +1657,7 @@ local aa = {
                 "TextButton",
                 {
                     Size = UDim2.new(1, 0, 0, 34),
-                    BackgroundTransparency = 0.55, -- ทำให้สีพื้นหลัง tap main / setting มองเห็นชัดขึ้น
+                    BackgroundTransparency = 0.55,
                     Parent = s,
                     ThemeTag = {BackgroundColor3 = "Tab"}
                 },
@@ -1529,8 +1711,8 @@ local aa = {
                     MidImage = "rbxassetid://6889812721",
                     TopImage = "rbxassetid://6276641225",
                     ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255),
-                    ScrollBarImageTransparency = 0.60, -- 🟢 ปรับโปร่งใสเหลือ 15% (เห็นชัดแต่นุ่มนวล)
-                    ScrollBarThickness = 3, -- 🟢 หนา 3px เท่าเดิม
+                    ScrollBarImageTransparency = 0.60,
+                    ScrollBarThickness = 3,
                     BorderSizePixel = 0,
                     CanvasSize = UDim2.fromScale(0, 0),
                     ScrollingDirection = Enum.ScrollingDirection.Y
@@ -1549,7 +1731,6 @@ local aa = {
                 }
             )
             
-            -- 🟢 บันทึก Scrollbar หลักเข้าสู่ระบบ RGB
             table.insert(j.RGBScrollbars, x.ContainerFrame)
             
             j.AddSignal(
@@ -1562,13 +1743,13 @@ local aa = {
             j.AddSignal(
                 x.Frame.MouseEnter,
                 function()
-                    x.SetTransparency(x.Selected and 0.23 or 0.23) -- ความสว่างตอนเอาเม้าส์ชี้ Tap main / Setting
+                    x.SetTransparency(x.Selected and 0.23 or 0.23)
                 end
             )
             j.AddSignal(
                 x.Frame.MouseLeave,
                 function()
-                    x.SetTransparency(x.Selected and 0.5 or 0.55) -- ความสว่างตอนเอาเมาส์ออก (ให้กลับไปที่ค่าเริ่มต้น)
+                    x.SetTransparency(x.Selected and 0.89 or 0.92)
                 end
             )
             j.AddSignal(
@@ -1593,8 +1774,8 @@ local aa = {
             o.Tabs[w] = x
             x.Container = x.ContainerFrame
             x.ScrollFrame = x.Container
-            function x.AddSection(z, A)
-                local B, C = {Type = "Section"}, e(n.Section)(A, x.Container)
+            function x.AddSection(z, A, optIcon)
+                local B, C = {Type = "Section"}, e(n.Section)(A, x.Container, optIcon)
                 B.Container = C.Container
                 B.ScrollFrame = x.Container
                 setmetatable(B, v)
@@ -1819,6 +2000,71 @@ local aa = {
                     end
                     return s
                 end
+            local titleIconAsset = nil
+            pcall(function()
+                if p and p.ResolveIcon and n.Icon then
+                    titleIconAsset = p.ResolveIcon(n.Icon)
+                end
+            end)
+            local titleChildren = {
+                l(
+                    "UIListLayout",
+                    {
+                        Padding = UDim.new(0, 5),
+                        FillDirection = Enum.FillDirection.Horizontal,
+                        SortOrder = Enum.SortOrder.LayoutOrder,
+                        VerticalAlignment = Enum.VerticalAlignment.Center
+                    }
+                )
+            }
+            if titleIconAsset then
+                table.insert(titleChildren, l("ImageLabel", {
+                    Image = titleIconAsset,
+                    Size = UDim2.fromOffset(16, 16),
+                    BackgroundTransparency = 1,
+                    LayoutOrder = 0,
+                    ThemeTag = {ImageColor3 = "Text"}
+                }))
+            end
+            table.insert(titleChildren, l(
+                "TextLabel",
+                {
+                    RichText = true,
+                    Text = n.Title,
+                    FontFace = Font.new(
+                        "rbxasset://fonts/families/GothamSSm.json",
+                        Enum.FontWeight.Regular,
+                        Enum.FontStyle.Normal
+                    ),
+                    TextSize = 12,
+                    TextXAlignment = "Left",
+                    TextYAlignment = "Center",
+                    Size = UDim2.fromScale(0, 1),
+                    AutomaticSize = Enum.AutomaticSize.X,
+                    BackgroundTransparency = 1,
+                    ThemeTag = {TextColor3 = "Text"}
+                }
+            ))
+            table.insert(titleChildren, l(
+                "TextLabel",
+                {
+                    RichText = true,
+                    Text = n.SubTitle,
+                    TextTransparency = 0.4,
+                    FontFace = Font.new(
+                        "rbxasset://fonts/families/GothamSSm.json",
+                        Enum.FontWeight.Regular,
+                        Enum.FontStyle.Normal
+                    ),
+                    TextSize = 12,
+                    TextXAlignment = "Left",
+                    TextYAlignment = "Center",
+                    Size = UDim2.fromScale(0, 1),
+                    AutomaticSize = Enum.AutomaticSize.X,
+                    BackgroundTransparency = 1,
+                    ThemeTag = {TextColor3 = "Text"}
+                }
+            ))
             o.Frame =
                 l(
                 "Frame",
@@ -1827,55 +2073,7 @@ local aa = {
                     l(
                         "Frame",
                         {Size = UDim2.new(1, -16, 1, 0), Position = UDim2.new(0, 16, 0, 0), BackgroundTransparency = 1},
-                        {
-                            l(
-                                "UIListLayout",
-                                {
-                                    Padding = UDim.new(0, 5),
-                                    FillDirection = Enum.FillDirection.Horizontal,
-                                    SortOrder = Enum.SortOrder.LayoutOrder
-                                }
-                            ),
-                            l(
-                                "TextLabel",
-                                {
-                                    RichText = true,
-                                    Text = n.Title,
-                                    FontFace = Font.new(
-                                        "rbxasset://fonts/families/GothamSSm.json",
-                                        Enum.FontWeight.Regular,
-                                        Enum.FontStyle.Normal
-                                    ),
-                                    TextSize = 12,
-                                    TextXAlignment = "Left",
-                                    TextYAlignment = "Center",
-                                    Size = UDim2.fromScale(0, 1),
-                                    AutomaticSize = Enum.AutomaticSize.X,
-                                    BackgroundTransparency = 1,
-                                    ThemeTag = {TextColor3 = "Text"}
-                                }
-                            ),
-                            l(
-                                "TextLabel",
-                                {
-                                    RichText = true,
-                                    Text = n.SubTitle,
-                                    TextTransparency = 0.4,
-                                    FontFace = Font.new(
-                                        "rbxasset://fonts/families/GothamSSm.json",
-                                        Enum.FontWeight.Regular,
-                                        Enum.FontStyle.Normal
-                                    ),
-                                    TextSize = 12,
-                                    TextXAlignment = "Left",
-                                    TextYAlignment = "Center",
-                                    Size = UDim2.fromScale(0, 1),
-                                    AutomaticSize = Enum.AutomaticSize.X,
-                                    BackgroundTransparency = 1,
-                                    ThemeTag = {TextColor3 = "Text"}
-                                }
-                            )
-                        }
+                        titleChildren
                     ),
                     l(
                         "Frame",
@@ -2138,7 +2336,6 @@ local aa = {
                 ThemeTag = { ImageColor3 = "SubText" }
             })
             
-            -- 🟢 ทำระบบไฟวิ่งสี RGB รอบกรอบ Search ตามที่สั่งไว้
             local searchStroke = SearchFrame:FindFirstChildWhichIsA("UIStroke")
             local rgbSearchGlow = s("UIGradient", { Rotation = 0, Name = "BorderShineGradient" })
             
@@ -2237,7 +2434,7 @@ local aa = {
                 {BackgroundTransparency = 1, Size = v.Size, Position = v.Position, Parent = t.Parent},
                 {v.AcrylicPaint.Frame, v.TabDisplay, v.ContainerHolder, F, E}
             )
-            v.TitleBar = e(d.Parent.TitleBar) {Title = t.Title, SubTitle = t.SubTitle, Parent = v.Root, Window = v}
+            v.TitleBar = e(d.Parent.TitleBar) {Title = t.Title, SubTitle = t.SubTitle, Icon = t.Icon, Parent = v.Root, Window = v}
             
             if t.UserInfo then
                 local function parseColor(value)
@@ -2566,8 +2763,8 @@ local aa = {
                 Registry = {},
                 Signals = {},
                 TransparencyMotors = {},
-                GradientBorders = {}, -- 🟢 ของเดิม (เอฟเฟคขอบ)
-                RGBScrollbars = {},   -- 🟢 เพิ่มตัวนี้สำหรับแถบเลื่อน RGB
+                GradientBorders = {},
+                RGBScrollbars = {},
                 DefaultProperties = {
                     ScreenGui = {ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling},
                     Frame = {
@@ -2657,15 +2854,15 @@ local aa = {
             
             local accentColor = k.GetThemeProperty("Accent")
             
-            -- 🟢 1. เปลี่ยนให้ Stroke เป็นสี Accent ของธีมนั้นๆ ตลอดเวลา (สว่างตลอด)
-            -- 🟢 2. Gradient จะทำหน้าที่แค่เพิ่ม "ความสว่าง" ให้ส่วนที่แสงวิ่งผ่านเท่านั้น
+            -- 1. เปลี่ยนให้ Stroke เป็นสี Accent ของธีมนั้นๆ ตลอดเวลา (สว่างตลอด)
+            -- 2. Gradient จะทำหน้าที่แค่เพิ่ม "ความสว่าง" ให้ส่วนที่แสงวิ่งผ่านเท่านั้น
             local newColorSeq = ColorSequence.new({
                 ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)), -- ขาวล้วน
                 ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)), -- ขาวล้วน
                 ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
             })
             
-            -- 🟢 3. ปรับ Transparency: ให้พื้นที่อื่นจางๆ แต่จุดที่ไฟวิ่งให้โปร่งใส (0) 
+            -- 3. ปรับ Transparency: ให้พื้นที่อื่นจางๆ แต่จุดที่ไฟวิ่งให้โปร่งใส (0) 
             -- เพื่อให้เห็นสี Accent ของ UIStroke ที่อยู่ข้างหลังชัดๆ
             local newTransSeq = NumberSequence.new({
                 NumberSequenceKeypoint.new(0, 0.6), -- ปรับความจางของช่วงที่ไม่มีไฟวิ่ง (0.6 คือกำลังดี)
@@ -2747,14 +2944,14 @@ local aa = {
             end
             return t, u
         end
-        -- 🟢 ระบบหมุนไฟวิ่งแบบไม่แดกสเปค + Scrollbar RGB
+        -- ระบบหมุนไฟวิ่งแบบไม่แดกสเปค + Scrollbar RGB
         local RunService = game:GetService("RunService")
         local globalRot = 0
-        local rgbHue = 0 -- ตัวแปรเก็บค่าคลื่นสี RGB
+        local rgbHue = 0
 
         RunService.RenderStepped:Connect(function(dt)
             globalRot = (globalRot + dt * 150) % 360 -- ความเร็วไฟวิ่งขอบ
-            rgbHue = (rgbHue + dt * 0.50) % 1 -- ความเร็วสี RGB ของ Scrollbar (เปลี่ยนเลข 0.15 ได้)
+            rgbHue = (rgbHue + dt * 0.50) % 1 -- ความเร็วสี RGB ของ Scrollbar (เปลี่ยนเลข 0.50)
             local currentRGB = Color3.fromHSV(rgbHue, 1, 1) -- สร้างสี RGB ปัจจุบัน
 
             -- 1. อัปเดตไฟวิ่งรอบขอบปุ่ม
@@ -2802,7 +2999,7 @@ local aa = {
             n.Callback = n.Callback or function()
                 end
             local isLocked = n.Locked
-            local o = e(k.Element)(n.Title, n.Description, m.Container, true, {Locked = isLocked, LockedTitle = n.LockedTitle})
+            local o = e(k.Element)(n.Title, n.Description, m.Container, true, {Locked = isLocked, LockedTitle = n.LockedTitle, Icon = n.Icon})
             local p =
                 j(
                 "ImageLabel",
@@ -2844,7 +3041,7 @@ local aa = {
             local y = v.Library
             assert(x.Title, "Colorpicker - Missing Title")
             assert(x.Default, "AddColorPicker: Missing default value.")
-            local isLocked = x.Locked -- 🛡️ ล็อคตัวแปร
+            local isLocked = x.Locked -- ล็อคตัวแปร
             local z = {
                 Value = x.Default,
                 Transparency = x.Transparency or 0,
@@ -3339,7 +3536,7 @@ local aa = {
                     Callback = j.Callback or function()
                         end
                 },
-                ac(f.Element)(j.Title, j.Description, h.Container, false, {Locked = isLocked, LockedTitle = j.LockedTitle})
+                ac(f.Element)(j.Title, j.Description, h.Container, false, {Locked = isLocked, LockedTitle = j.LockedTitle, Icon = j.Icon})
             m.DescLabel.Size = UDim2.new(1, -170, 0, 14)
             l.SetTitle = m.SetTitle
             l.SetDesc = m.SetDesc
@@ -3486,11 +3683,10 @@ local aa = {
                         end
                     end
                     local targetHeight = s.AbsoluteContentSize.Y + (j.Search and 43 or 10)
-                    if visibleCount > 10 then
-                        v.Size = UDim2.fromOffset(x, 392)
-                    else
-                        v.Size = UDim2.fromOffset(x, targetHeight)
-                    end
+                    local targetHeight = s.AbsoluteContentSize.Y + (j.Search and 43 or 10)
+                    local maxOptions = 4 -- อยากให้ dropdown โชว์กี่ตัวเลือก (ไม่รวมช่องค้นหา)
+                    local maxHeight = maxOptions * 32 + (maxOptions - 1) * 3 + (j.Search and 43 or 10)
+                    v.Size = UDim2.fromOffset(x, math.min(targetHeight, maxHeight))
                 end, function()
                     t.CanvasSize = UDim2.fromOffset(0, s.AbsoluteContentSize.Y)
                 end
@@ -3550,17 +3746,29 @@ local aa = {
                 u.Size = UDim2.fromScale(1, 0.6)
                 v.Visible = false
             end
+            local function _formatOpt(val)
+                if not val then return "" end
+                if type(val) == "table" then return val.Title or val.Name or "" end
+                local s = tostring(val)
+                local brIcon, brText = s:match("^%[(.-)%]%s*(.*)$")
+                if brIcon and brIcon ~= "" then return brText end
+                local pIcon, pText = s:match("^(.-)%s*|%s*(.*)$")
+                if pIcon and pIcon ~= "" and pText and pText ~= "" then return pText end
+                local w1, wRest = s:match("^(%S+)%s+(.+)$")
+                if w1 and wRest and k.ResolveIcon and k.ResolveIcon(w1) then return wRest end
+                return s
+            end
             function l.Display(B)
                 local C, D = l.Values, ""
                 if j.Multi then
                     for E, F in next, C do
                         if l.Value[F] then
-                            D = D .. F .. ", "
+                            D = D .. _formatOpt(F) .. ", "
                         end
                     end
                     D = D:sub(1, #D - 2)
                 else
-                    D = l.Value or ""
+                    D = _formatOpt(l.Value)
                 end
                 n.Text = (D == "" and "--" or D)
             end
@@ -3586,6 +3794,27 @@ local aa = {
                 for H, I in next, C do
                     local J = {}
                     G = G + 1
+                    local itemText = _formatOpt(I)
+                    local itemIconAsset = nil
+                    if type(I) == "table" and I.Icon then
+                        itemIconAsset = k.ResolveIcon and k.ResolveIcon(I.Icon)
+                    elseif type(I) == "string" then
+                        local brIcon = I:match("^%[(.-)%]%s*")
+                        if brIcon and brIcon ~= "" and k.ResolveIcon then
+                            itemIconAsset = k.ResolveIcon(brIcon)
+                        else
+                            local pIcon = I:match("^(.-)%s*|%s*")
+                            if pIcon and pIcon ~= "" and k.ResolveIcon then
+                                itemIconAsset = k.ResolveIcon(pIcon)
+                            else
+                                local w1 = I:match("^(%S+)%s+")
+                                if w1 and k.ResolveIcon then
+                                    itemIconAsset = k.ResolveIcon(w1)
+                                end
+                            end
+                        end
+                    end
+                    local optIconOffset = itemIconAsset and 20 or 0
                     local K, L =
                         e(
                             "Frame",
@@ -3602,19 +3831,30 @@ local aa = {
                             "TextLabel",
                             {
                                 FontFace = Font.new "rbxasset://fonts/families/GothamSSm.json",
-                                Text = I,
+                                Text = itemText,
                                 TextColor3 = Color3.fromRGB(200, 200, 200),
                                 TextSize = 13,
                                 TextXAlignment = Enum.TextXAlignment.Left,
                                 BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                                 AutomaticSize = Enum.AutomaticSize.Y,
                                 BackgroundTransparency = 1,
-                                Size = UDim2.fromScale(1, 1),
-                                Position = UDim2.fromOffset(10, 0),
+                                Size = UDim2.new(1, -10 - optIconOffset, 1, 0),
+                                Position = UDim2.fromOffset(10 + optIconOffset, 0),
                                 Name = "ButtonLabel",
                                 ThemeTag = {TextColor3 = "Text"}
                             }
                         )
+                    local btnChildren = {K, L, e("UICorner", {CornerRadius = UDim.new(0, 6)})}
+                    if itemIconAsset then
+                        table.insert(btnChildren, e("ImageLabel", {
+                            Image = itemIconAsset,
+                            Size = UDim2.fromOffset(14, 14),
+                            Position = UDim2.new(0, 8, 0.5, 0),
+                            AnchorPoint = Vector2.new(0, 0.5),
+                            BackgroundTransparency = 1,
+                            ThemeTag = {ImageColor3 = "Text"}
+                        }))
+                    end
                     local M, N =
                         (e(
                         "TextButton",
@@ -3626,7 +3866,7 @@ local aa = {
                             Parent = t,
                             ThemeTag = {BackgroundColor3 = "DropdownOption"}
                         },
-                        {K, L, e("UICorner", {CornerRadius = UDim.new(0, 6)})}
+                        btnChildren
                     ))
                     if j.Multi then
                         N = l.Value[I]
@@ -3816,7 +4056,7 @@ local aa = {
                         end,
                     Type = "Input"
                 },
-                ac(aj.Element)(f.Title, f.Description, d.Container, false, {Locked = isLocked, LockedTitle = f.LockedTitle})
+                ac(aj.Element)(f.Title, f.Description, d.Container, false, {Locked = isLocked, LockedTitle = f.LockedTitle, Icon = f.Icon})
             h.SetTitle = i.SetTitle
             h.SetDesc = i.SetDesc
             local j = ac(aj.Textbox)(i.Frame, true)
@@ -3907,7 +4147,7 @@ local aa = {
                         end
                 },
                 false,
-                ac(aj.Element)(f.Title, f.Description, d.Container, true, {Locked = isLocked, LockedTitle = f.LockedTitle})
+                ac(aj.Element)(f.Title, f.Description, d.Container, true, {Locked = isLocked, LockedTitle = f.LockedTitle, Icon = f.Icon})
             h.SetTitle = j.SetTitle
             h.SetDesc = j.SetDesc
             local k =
@@ -4084,7 +4324,7 @@ local aa = {
         function aj.New(c, d)
             assert(d.Title, "Paragraph - Missing Title")
             d.Content = d.Content or ""
-            local e = ac(ag.Element)(d.Title, d.Content, aj.Container, false)
+            local e = ac(ag.Element)(d.Title, d.Content, aj.Container, false, {Icon = d.Icon})
             e.Frame.BackgroundTransparency = 0.92
             return e
         end
@@ -4116,7 +4356,7 @@ local aa = {
                     Type = "Slider"
                 },
                 false,
-                ac(aj.Element)(f.Title, f.Description, d.Container, false, {Locked = isLocked, LockedTitle = f.LockedTitle})
+                ac(aj.Element)(f.Title, f.Description, d.Container, false, {Locked = isLocked, LockedTitle = f.LockedTitle, Icon = f.Icon})
             j.DescLabel.Size = UDim2.new(1, -170, 0, 14)
             h.SetTitle = j.SetTitle
             h.SetDesc = j.SetDesc
@@ -4128,7 +4368,7 @@ local aa = {
                     Position = UDim2.new(0, -7, 0.5, 0),
                     Size = UDim2.fromOffset(14, 14),
                     Image = "http://www.roblox.com/asset/?id=12266946128",
-                    ImageTransparency = isLocked and 0.95 or 0, -- 🛠️ ปรับจาก 0.7 เป็น 0.95 ลูกกลิ้งจะจางเกือบหาย
+                    ImageTransparency = isLocked and 0.95 or 0, -- ปรับจาก 0.7 เป็น 0.95 ลูกกลิ้งจะจางเกือบหาย
                     ThemeTag = {ImageColor3 = "Accent"}
                 }
             )
@@ -4140,7 +4380,7 @@ local aa = {
                 ),
                 ai(
                     "Frame",
-                    {Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = isLocked and 0.95 or 0, ThemeTag = {BackgroundColor3 = "Accent"}}, -- 🛠️ ปรับจาก 0.7 เป็น 0.95 เส้นสีๆ ที่วิ่งตามลูกกลิ้งจะจางลง
+                    {Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = isLocked and 0.95 or 0, ThemeTag = {BackgroundColor3 = "Accent"}}, -- ปรับจาก 0.7 เป็น 0.95 เส้นสีๆ ที่วิ่งตามลูกกลิ้งจะจางลง
                     {ai("UICorner", {CornerRadius = UDim.new(1, 0)})}
                 ),
                 ai(
@@ -4153,7 +4393,7 @@ local aa = {
                         TextXAlignment = Enum.TextXAlignment.Right,
                         BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                         BackgroundTransparency = 1,
-                        TextTransparency = isLocked and 0.85 or 0, -- 🛠️ ตัวเลข 50 ด้านขวาจะจางลงอีก
+                        TextTransparency = isLocked and 0.85 or 0, -- ตัวเลข 50 ด้านขวาจะจางลงอีก
                         Size = UDim2.new(0, 100, 0, 14),
                         Position = UDim2.new(0, -4, 0.5, 0),
                         AnchorPoint = Vector2.new(1, 0.5),
@@ -4260,7 +4500,7 @@ local aa = {
                         end,
                     Type = "Toggle"
                 },
-                ac(aj.Element)(f.Title, f.Description, d.Container, true, {Locked = isLocked, LockedTitle = f.LockedTitle})
+                ac(aj.Element)(f.Title, f.Description, d.Container, true, {Locked = isLocked, LockedTitle = f.LockedTitle, Icon = f.Icon})
             i.DescLabel.Size = UDim2.new(1, -54, 0, 14)
             h.SetTitle = i.SetTitle
             h.SetDesc = i.SetDesc
@@ -4333,7 +4573,8 @@ local aa = {
     end,
     [28] = function()
         local aa, ab, ac, ad, ae = b(28)
-        local assets = {
+        return {
+            assets = {
                 ["lucide-accessibility"] = "rbxassetid://10709751939",
                 ["lucide-activity"] = "rbxassetid://10709752035",
                 ["lucide-air-vent"] = "rbxassetid://10709752131",
@@ -5153,23 +5394,6 @@ local aa = {
                 ["lucide-zoom-in"] = "rbxassetid://10747384552",
                 ["lucide-zoom-out"] = "rbxassetid://10747384679"
             }
-
-        local externalIconLink = "https://pastefy.app/bGHLCzIz/raw"
-        if externalIconLink ~= "" then
-            local fetchSuccess, externalIconResult = pcall(function()
-                return loadstring(game:HttpGet(externalIconLink))()
-            end)
-            if fetchSuccess and typeof(externalIconResult) == "table" then
-                for iconName, assetId in pairs(externalIconResult) do
-                    if assets[iconName] == nil then
-                        assets[iconName] = assetId
-                    end
-                end
-            end
-        end
-
-        return {
-            assets = assets
         }
     end,
     [30] = function()
