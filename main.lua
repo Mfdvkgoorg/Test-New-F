@@ -7,8 +7,8 @@
     License: MIT
     GitHub: https://github.com/dawid-scripts/Fluent
 --]]
-
-local FLUENT_ICON_VERSION = "1.0" -- เลขเวอร์ชันไอคอน
+local FLUENT_ICON_VERSION = "1.0" -- เลขเวอร์ชันไอคอน (เปลี่ยนเมื่ออัปเดตไอคอนใหม่)
+local FLUENT_ICON_URL = "https://raw.githubusercontent.com/Mfdvkgoorg/Test-New-F/refs/heads/main/fluenticons.lua"
 local a, b = {
     {
         1,
@@ -324,15 +324,17 @@ local aa = {
         end
         local y = e(o.Icons).assets
 
-        -- ระบบโหลด fluenticons.lua พร้อมเวอร์ชันคุม และ auto-fetch เมื่อหาไอคอนไม่เจอ
         x.IconVersion = getgenv().FluentIconVersion or FLUENT_ICON_VERSION or "1.0"
         local _extIcons = nil
         local _extIconsLoaded = false
         local _EXT_CACHE_FILE = "FluentPlus_IconCache.lua"
         local _EXT_VER_FILE = "FluentPlus_IconVersion.txt"
         local _EXT_URLS = {
-            "https://cdn.jsdelivr.net/gh/Mfdvkgoorg/New-F@main/fluenticons.lua",
+            getgenv().FluentIconURL or FLUENT_ICON_URL,
+            "https://raw.githubusercontent.com/Mfdvkgoorg/Test-New-F/refs/heads/main/fluenticons.lua",
+            "https://raw.githubusercontent.com/Mfdvkgoorg/Test-New-F/main/fluenticons.lua",
             "https://raw.githubusercontent.com/Mfdvkgoorg/New-F/refs/heads/main/fluenticons.lua",
+            "https://cdn.jsdelivr.net/gh/Mfdvkgoorg/New-F@main/fluenticons.lua",
         }
         local _lastMissFetch = 0
         local _failedMissKeys = {}
@@ -368,8 +370,6 @@ local aa = {
         local function _loadExtIcons(force)
             if _extIconsLoaded and not force then return end
             _extIconsLoaded = true
-
-            -- ตรวจสอบเวอร์ชันและไฟล์แคช
             if not force and isfile and isfile(_EXT_CACHE_FILE) and isfile(_EXT_VER_FILE) then
                 local cachedVer = ""
                 pcall(function() cachedVer = readfile(_EXT_VER_FILE) end)
@@ -385,8 +385,6 @@ local aa = {
                     end
                 end
             end
-
-            -- ถ้าเวอร์ชันไม่ตรง หรือไม่มีแคช หรือสั่ง force ให้ดึงจากเน็ต
             _fetchFromNetwork()
         end
 
@@ -398,22 +396,18 @@ local aa = {
                 return "rbxassetid://" .. tostring(A)
             end
             A = tostring(A)
-            -- ถ้าเป็น asset id รูปแบบต่างๆ คืนค่าทันที
             if A:sub(1, 13) == "rbxassetid://" or A:sub(1, 12) == "rbxthumb://" or A:sub(1, 4) == "http" then
                 return A
             end
             if A:match("^%d+$") then
                 return "rbxassetid://" .. A
             end
-            -- ค้นจาก lucide เดิมก่อน
             if y["lucide-" .. A] then
                 return y["lucide-" .. A]
             end
-            -- ค้นจาก fluenticons ที่โหลดไว้
             if _extIcons and _extIcons[A] then
                 return _extIcons[A]
             end
-            -- ถ้าหาไม่เจอ: ดึงจาก github อัตโนมัติ (on-demand miss)
             local now = tick()
             if not _failedMissKeys[A] and (now - _lastMissFetch > 5) then
                 _lastMissFetch = now
@@ -433,7 +427,6 @@ local aa = {
             return _extIcons ~= nil
         end
 
-        -- ฟังก์ชัน resolve icon สำหรับใช้ใน element ต่างๆ
         function x.ResolveIcon(A)
             if not A or A == "" then return nil end
             if type(A) == "number" then
@@ -1091,8 +1084,25 @@ local aa = {
         local k, l = j.New, i.Spring.new
         return function(m, n, o, p, opt)
             opt = opt or {}
+            if type(m) == "string" then
+                local rawIcon, cleanTitle = m:match("^%[(.-)%]%s*(.*)")
+                if rawIcon and rawIcon ~= "" then
+                    if not opt.Icon or opt.Icon == "" then
+                        opt.Icon = rawIcon
+                    end
+                    m = cleanTitle
+                end
+            end
+            if type(n) == "string" then
+                local descIcon, cleanDesc = n:match("^%[(.-)%]%s*(.*)")
+                if descIcon and descIcon ~= "" then
+                    if not opt.Icon or opt.Icon == "" then
+                        opt.Icon = descIcon
+                    end
+                    n = cleanDesc
+                end
+            end
             local q = {}
-            -- resolve icon via library
             local _iconImg = nil
             pcall(function()
                 local lib = e(h)
@@ -1158,7 +1168,6 @@ local aa = {
                 },
                 _labelChildren
             )
-            -- วาง icon ImageLabel ทางซ้ายของ element
             if _iconImg then
                 q.IconLabel = k("ImageLabel", {
                     Image = _iconImg,
@@ -1350,6 +1359,24 @@ local aa = {
         function o.New(p, q)
             q.Title = q.Title or "Title"
             q.Content = q.Content or "Content"
+            if type(q.Title) == "string" then
+                local rawIcon, cleanTitle = q.Title:match("^%[(.-)%]%s*(.*)")
+                if rawIcon and rawIcon ~= "" then
+                    if not q.Icon or q.Icon == "" then
+                        q.Icon = rawIcon
+                    end
+                    q.Title = cleanTitle
+                end
+            end
+            if type(q.Content) == "string" then
+                local cIcon, cleanContent = q.Content:match("^%[(.-)%]%s*(.*)")
+                if cIcon and cIcon ~= "" then
+                    if not q.Icon or q.Icon == "" then
+                        q.Icon = cIcon
+                    end
+                    q.Content = cleanContent
+                end
+            end
             q.SubContent = q.SubContent or ""
             q.Duration = q.Duration or nil
             q.Buttons = q.Buttons or {}
@@ -1567,6 +1594,15 @@ local aa = {
                 secTitle = k.Title or k.Name or ""
                 secIcon = k.Icon or optIcon
             end
+            if type(secTitle) == "string" then
+                local rawIcon, cleanTitle = secTitle:match("^%[(.-)%]%s*(.*)")
+                if rawIcon and rawIcon ~= "" then
+                    if not secIcon or secIcon == "" then
+                        secIcon = rawIcon
+                    end
+                    secTitle = cleanTitle:gsub("%s*%[.-%]$", "")
+                end
+            end
             local lib = e(h)
             local iconAsset = nil
             if lib and lib.ResolveIcon and secIcon then
@@ -1658,6 +1694,15 @@ local aa = {
             local t, u = e(h), o.Window
             local v = t.Elements
             o.TabCount = o.TabCount + 1
+            if type(q) == "string" then
+                local rawIcon, cleanName = q:match("^%[(.-)%]%s*(.*)")
+                if rawIcon and rawIcon ~= "" then
+                    if not r or r == "" then
+                        r = rawIcon
+                    end
+                    q = cleanName
+                end
+            end
             local w, x = o.TabCount, {Selected = false, Name = q, Type = "Tab"}
             if t:GetIcon(r) then
                 r = t:GetIcon(r)
@@ -2714,13 +2759,15 @@ local aa = {
             local M = e(p.Dialog):Init(v)
             function v.Dialog(N, O)
                 local P = M:Create()
-                P.Title.Text = O.Title
+                local dTitle = type(O.Title) == "string" and O.Title:gsub("^%[.-%]%s*", "") or O.Title
+                local dContent = type(O.Content) == "string" and O.Content:gsub("^%[.-%]%s*", "") or O.Content
+                P.Title.Text = dTitle
                 local Q =
                     s(
                     "TextLabel",
                     {
                         FontFace = Font.new "rbxasset://fonts/families/GothamSSm.json",
-                        Text = O.Content,
+                        Text = dContent,
                         TextColor3 = Color3.fromRGB(240, 240, 240),
                         TextSize = 14,
                         TextXAlignment = Enum.TextXAlignment.Left,
@@ -2744,7 +2791,8 @@ local aa = {
                     P.Root.Size = UDim2.fromOffset(v.Size.X.Offset - 120, Q.TextBounds.Y + 150)
                 end
                 for R, S in next, O.Buttons do
-                    P:Button(S.Title, S.Callback)
+                    local bTitle = type(S.Title) == "string" and S.Title:gsub("^%[.-%]%s*", "") or S.Title
+                    P:Button(bTitle, S.Callback)
                 end
                 P:Open()
             end
@@ -2866,17 +2914,11 @@ local aa = {
             end
             
             local accentColor = k.GetThemeProperty("Accent")
-            
-            -- 1. เปลี่ยนให้ Stroke เป็นสี Accent ของธีมนั้นๆ ตลอดเวลา (สว่างตลอด)
-            -- 2. Gradient จะทำหน้าที่แค่เพิ่ม "ความสว่าง" ให้ส่วนที่แสงวิ่งผ่านเท่านั้น
             local newColorSeq = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)), -- ขาวล้วน
-                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)), -- ขาวล้วน
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
                 ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
             })
-            
-            -- 3. ปรับ Transparency: ให้พื้นที่อื่นจางๆ แต่จุดที่ไฟวิ่งให้โปร่งใส (0) 
-            -- เพื่อให้เห็นสี Accent ของ UIStroke ที่อยู่ข้างหลังชัดๆ
             local newTransSeq = NumberSequence.new({
                 NumberSequenceKeypoint.new(0, 0.6), -- ปรับความจางของช่วงที่ไม่มีไฟวิ่ง (0.6 คือกำลังดี)
                 NumberSequenceKeypoint.new(0.3, 0), -- จุดเริ่มสว่าง
@@ -2890,7 +2932,6 @@ local aa = {
                     if grad and grad.Parent then
                         grad.Color = newColorSeq
                         grad.Transparency = newTransSeq
-                        -- บังคับให้ Stroke เป็นสี Accent เสมอ
                         grad.Parent.Color = accentColor
                     else
                         table.remove(k.GradientBorders, idx)
@@ -2957,7 +2998,6 @@ local aa = {
             end
             return t, u
         end
-        -- ระบบหมุนไฟวิ่งแบบไม่แดกสเปค + Scrollbar RGB
         local RunService = game:GetService("RunService")
         local globalRot = 0
         local rgbHue = 0
@@ -2966,8 +3006,6 @@ local aa = {
             globalRot = (globalRot + dt * 150) % 360 -- ความเร็วไฟวิ่งขอบ
             rgbHue = (rgbHue + dt * 0.50) % 1 -- ความเร็วสี RGB ของ Scrollbar (เปลี่ยนเลข 0.50)
             local currentRGB = Color3.fromHSV(rgbHue, 1, 1) -- สร้างสี RGB ปัจจุบัน
-
-            -- 1. อัปเดตไฟวิ่งรอบขอบปุ่ม
             for idx = #k.GradientBorders, 1, -1 do
                 local grad = k.GradientBorders[idx]
                 if grad and grad.Parent then
@@ -2976,8 +3014,6 @@ local aa = {
                     table.remove(k.GradientBorders, idx)
                 end
             end
-            
-            -- 2. อัปเดตแถบเลื่อน (Scrollbar) ให้เป็น RGB
             if k.RGBScrollbars then
                 for idx = #k.RGBScrollbars, 1, -1 do
                     local scrollbar = k.RGBScrollbars[idx]
@@ -3054,7 +3090,7 @@ local aa = {
             local y = v.Library
             assert(x.Title, "Colorpicker - Missing Title")
             assert(x.Default, "AddColorPicker: Missing default value.")
-            local isLocked = x.Locked -- ล็อคตัวแปร
+            local isLocked = x.Locked
             local z = {
                 Value = x.Default,
                 Transparency = x.Transparency or 0,
@@ -4059,7 +4095,7 @@ local aa = {
             assert(f.Title, "Input - Missing Title")
             f.Callback = f.Callback or function()
                 end
-            local isLocked = f.Locked -- ล็อคตัวแปร
+            local isLocked = f.Locked
             local h, i =
                 {
                     Value = f.Default or "",
@@ -4077,7 +4113,8 @@ local aa = {
             j.Frame.AnchorPoint = Vector2.new(1, 0.5)
             j.Frame.Size = UDim2.fromOffset(160, 30)
             j.Input.Text = f.Default or ""
-            j.Input.PlaceholderText = f.Placeholder or ""
+            local cleanPlaceholder = type(f.Placeholder) == "string" and f.Placeholder:gsub("^%[.-%]%s*", "") or (f.Placeholder or "")
+            j.Input.PlaceholderText = cleanPlaceholder
             
             if isLocked then
                 j.Frame.BackgroundTransparency = 0.98
@@ -4147,7 +4184,7 @@ local aa = {
             local g = d.Library
             assert(f.Title, "KeyBind - Missing Title")
             assert(f.Default, "KeyBind - Missing default value.")
-            local isLocked = f.Locked -- ล็อคตัวแปร
+            local isLocked = f.Locked
             local h, i, j =
                 {
                     Value = f.Default,
@@ -4357,7 +4394,7 @@ local aa = {
             assert(f.Min, "Slider - Missing minimum value.")
             assert(f.Max, "Slider - Missing maximum value.")
             assert(f.Rounding, "Slider - Missing rounding value.")
-            local isLocked = f.Locked -- ล็อคตัวแปร
+            local isLocked = f.Locked
             local h, i, j =
                 {
                     Value = nil,
@@ -4505,7 +4542,7 @@ local aa = {
         function c.New(d, e, f)
             local g = d.Library
             assert(f.Title, "Toggle - Missing Title")
-            local isLocked = f.Locked -- ล็อคตัวแปร
+            local isLocked = f.Locked
             local h, i =
                 {
                     Value = f.Default or false,
