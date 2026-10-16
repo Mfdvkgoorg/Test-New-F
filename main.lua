@@ -10,7 +10,7 @@
 
 -- [FLUENT PLUS - CONFIG]
 local FLUENT_ICON_VERSION = "1.0"
-local FLUENT_ICON_URL = "https://url.in.th/fdCJd"
+local FLUENT_ICON_URL = "https://cryptpad.fr/code/#/2/code/view/HI0GChoztQrbZpTvlBZDPepJAexOAk1Q+X+ufjwtbiM"
 
 local a, b = {
     {
